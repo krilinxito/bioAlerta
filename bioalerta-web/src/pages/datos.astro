@@ -1,0 +1,269 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Datos y fuentes — BioAlerta">
+
+  <section style="padding:5rem 0 3rem;border-bottom:1px solid var(--color-border)">
+    <div class="container">
+      <p style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:1rem">Datos y fuentes</p>
+      <h1 style="margin-bottom:0.75rem;max-width:600px">Transparencia científica</h1>
+      <div class="divider"></div>
+      <p style="max-width:560px;font-size:1.05rem">
+        BioAlerta integra seis fuentes de datos abiertas.
+        Todos los datos son públicos y reproducibles. El informe completo y el código fuente
+        documentan cada paso del pipeline.
+      </p>
+    </div>
+  </section>
+
+  <!-- Data sources table -->
+  <section class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Fuentes de datos</h2>
+      <div class="divider"></div>
+
+      <!-- Column headers -->
+      <div style="display:grid;grid-template-columns:200px 1fr 1fr;gap:0;margin-top:2.5rem;margin-bottom:0;padding:0 0 0.5rem">
+        {['Fuente', 'Cobertura', 'Variables del modelo'].map(h => (
+          <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-secondary);padding:0 1rem">{h}</p>
+        ))}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0;border:1px solid var(--color-border);border-radius:2px;overflow:hidden">
+        {[
+          {
+            name: 'GBIF',
+            full: 'Global Biodiversity Information Facility',
+            cov: '1.37M registros · Bolivia · 2000–2024',
+            vars: [
+              'decimalLatitude / decimalLongitude',
+              'species, genus, family, order, class',
+              'eventDate, year, month, stateProvince',
+              'basisOfRecord',
+            ],
+          },
+          {
+            name: 'IUCN / Wikidata',
+            full: 'Red List of Threatened Species (vía Wikidata)',
+            cov: '1,502 spp · Bolivia',
+            vars: [
+              'iucn_categoria: LC, NT, VU, EN, CR, DD',
+              'Excluídas: DD y sin etiqueta (202 spp)',
+              'Target binario: threatened = VU/EN/CR',
+            ],
+          },
+          {
+            name: 'AVONET',
+            full: 'Avian morphological & ecological traits database',
+            cov: '11,009 spp · global · 15 variables',
+            vars: [
+              'Mass, Wing.Length, Kipps.Distance',
+              'Beak.Length_Culmen, Beak.Width, Beak.Depth',
+              'Tarsus.Length, Range.Size',
+              'Habitat, Trophic.Level, Trophic.Niche',
+              'Primary.Lifestyle, Migration',
+            ],
+          },
+          {
+            name: 'PanTHERIA',
+            full: 'Mammalian life-history, ecology & geography database',
+            cov: '5,416 spp · global · 56 variables (4 usadas)',
+            vars: [
+              'AdultBodyMass_g — masa corporal adulta',
+              'TrophicLevel — nivel trófico (1-3)',
+              'ActivityCycle — ciclo de actividad (1-3)',
+              'GR_Area_km2 — área de distribución',
+            ],
+          },
+          {
+            name: 'WorldClim v2.1',
+            full: 'Global climatic variables at 1 km resolution',
+            cov: '1 km resolución · Bolivia recortada',
+            vars: [
+              'BIO1 — Temperatura media anual',
+              'BIO4 — Estacionalidad de temperatura',
+              'BIO7 — Rango anual de temperatura',
+              'BIO12 — Precipitación anual',
+              'BIO14 — Precipitación mes más seco',
+              'BIO15 — Estacionalidad de precipitación',
+            ],
+          },
+          {
+            name: 'Global Forest Watch',
+            full: 'Hansen/UMD/Google/USGS forest change detection',
+            cov: '30 m resolución · 2001–2023',
+            vars: [
+              'pct_forest_loss_total — pérdida forestal 2001-2023 (%)',
+              'pct_forest_loss_recent — pérdida forestal 2015-2023 (%)',
+            ],
+          },
+          {
+            name: 'MapBiomas Bolivia',
+            full: 'Annual land cover and land use classification',
+            cov: '30 m resolución · 2022 · 14 clases',
+            vars: [
+              'lc_forest — cobertura forestal (%)',
+              'lc_natural — vegetación natural (%)',
+              'lc_agriculture — uso agrícola (%)',
+              'lc_water — cuerpos de agua (%)',
+              '+ 10 clases adicionales',
+            ],
+          },
+          {
+            name: 'RAISG',
+            full: 'Red Amazónica de Información Socioambiental Georeferenciada',
+            cov: 'Vectorial · Amazonia · jun. 2025',
+            vars: [
+              'pct_anp, anp_dist_km — áreas protegidas',
+              'pct_ti, ti_dist_km — territorios indígenas',
+              'pct_min_ilegal, min_ilegal_dist_km — minería ilegal',
+              'pct_concesion, concesion_dist_km — concesiones mineras',
+              'pct_petroleo, petroleo_dist_km — bloques petroleros',
+              'via_dist_km — distancia a vías nacionales',
+              'quemas_freq — frecuencia de incendios',
+            ],
+          },
+        ].map((row, i) => (
+          <div style={`
+            display:grid;grid-template-columns:200px 1fr 1fr;
+            border-bottom:${i < 7 ? '1px solid var(--color-border)' : 'none'};
+          `}>
+            <div style="padding:1.25rem 1rem;border-right:1px solid var(--color-border);background:var(--color-surface)">
+              <strong style="font-size:0.875rem;color:var(--color-text);display:block">{row.name}</strong>
+              <p style="font-size:0.72rem;margin-top:0.2rem;line-height:1.4">{row.full}</p>
+            </div>
+            <div style="padding:1.25rem 1rem;border-right:1px solid var(--color-border)">
+              <p style="font-size:0.78rem;color:var(--color-secondary)">{row.cov}</p>
+            </div>
+            <div style="padding:1.25rem 1rem">
+              <ul style="list-style:none;display:flex;flex-direction:column;gap:0.3rem">
+                {row.vars.map(v => (
+                  <li style="display:flex;align-items:flex-start;gap:0.4rem">
+                    <span style="width:3px;height:3px;border-radius:50%;background:var(--color-accent);flex-shrink:0;margin-top:0.45rem"></span>
+                    <span style="font-size:0.75rem;color:var(--color-secondary);font-family:'JetBrains Mono',monospace">{v}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Dataset statistics -->
+  <section style="background:var(--color-surface);border-top:1px solid var(--color-border);border-bottom:1px solid var(--color-border)" class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Composición del dataset</h2>
+      <div class="divider"></div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2rem;margin-top:2.5rem">
+        {[
+          {
+            title: 'Aves',
+            color: '#2471A3',
+            items: [
+              '1,478 especies con ocurrencias GBIF',
+              '1,313 usables para el modelo',
+              '36 amenazadas (VU/EN/CR) → 2.7%',
+              '1,277 no amenazadas (LC/NT)',
+              '165 sin evaluación IUCN (predicción)',
+              '89.1% match con AVONET',
+            ]
+          },
+          {
+            title: 'Mamíferos',
+            color: '#784212',
+            items: [
+              '240 especies con ocurrencias GBIF',
+              '189 usables para el modelo',
+              '13 amenazadas (VU/EN/CR) → 6.9%',
+              '176 no amenazadas (LC/NT)',
+              '37 sin evaluación IUCN (predicción)',
+              '81.2% match con PanTHERIA',
+            ]
+          },
+          {
+            title: 'Features del modelo',
+            color: 'var(--color-accent)',
+            items: [
+              '51 variables por especie',
+              '6 bioclimáticas (WorldClim)',
+              '14 cobertura terrestre (MapBiomas)',
+              '8 presión humana (RAISG)',
+              '2 pérdida forestal (GFW)',
+              '~21 rasgos biológicos (AVONET/PanTHERIA)',
+            ]
+          },
+        ].map(group => (
+          <div>
+            <h3 style={`font-size:1rem;margin-bottom:1rem;font-family:'Playfair Display',serif;color:${group.color}`}>{group.title}</h3>
+            <ul style="list-style:none">
+              {group.items.map(item => (
+                <li style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--color-border);font-size:0.82rem;color:var(--color-secondary)">
+                  <span style={`width:4px;height:4px;border-radius:50%;background:${group.color};flex-shrink:0;margin-top:0.45rem`}></span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Downloads & credits -->
+  <section class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Documentación</h2>
+      <div class="divider"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2.5rem;max-width:760px">
+        <a
+          href="/informe_bioalerta.pdf"
+          target="_blank"
+          style="
+            display:flex;align-items:center;gap:1rem;
+            padding:1.5rem;border:1px solid var(--color-border);border-radius:2px;
+            text-decoration:none;background:var(--color-surface);
+            transition:border-color 0.2s;
+          "
+          onmouseenter="this.style.borderColor='var(--color-accent)'"
+          onmouseleave="this.style.borderColor='var(--color-border)'"
+        >
+          <span style="font-size:2rem">📄</span>
+          <div>
+            <p style="font-weight:600;color:var(--color-text);font-size:0.9rem">Informe completo</p>
+            <p style="font-size:0.78rem;color:var(--color-secondary);margin-top:0.1rem">PDF · 33 páginas · UMSA 2026</p>
+          </div>
+        </a>
+
+        <div style="
+          display:flex;align-items:center;gap:1rem;
+          padding:1.5rem;border:1px solid var(--color-border);border-radius:2px;
+          background:var(--color-surface);
+        ">
+          <div style="display:flex;flex-direction:column;gap:0.5rem">
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <img src="/img/Logo_Umsa.png" alt="UMSA" style="height:36px;object-fit:contain" />
+            </div>
+            <p style="font-size:0.78rem;color:var(--color-secondary)">Universidad Mayor de San Andrés<br/>Carrera de Informática · La Paz, Bolivia</p>
+            <p style="font-size:0.78rem;color:var(--color-secondary)">Maximiliano Gómez Mallo · 2026</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:3rem;padding:1.5rem;border:1px solid var(--color-border);border-radius:2px;background:var(--color-accent-light);max-width:760px">
+        <p style="font-size:0.875rem;color:var(--color-accent);font-weight:600;margin-bottom:0.5rem">Nota metodológica</p>
+        <p style="font-size:0.82rem;color:var(--color-secondary)">
+          Las predicciones de este sitio son estimaciones probabilísticas generadas por un modelo de machine learning
+          entrenado con datos históricos. No reemplazan evaluaciones de campo ni el criterio experto de la IUCN.
+          Las 202 especies evaluadas carecían de datos suficientes para una evaluación formal al momento del análisis.
+          El modelo puede contener sesgos derivados del desbalance de clases y la heterogeneidad de las fuentes.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</Base>

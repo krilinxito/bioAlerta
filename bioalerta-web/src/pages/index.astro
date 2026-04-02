@@ -1,0 +1,290 @@
+---
+import Base from '../layouts/Base.astro';
+import SpeciesCard from '../components/SpeciesCard.astro';
+import { SPOTLIGHT } from '../data/species_spotlight';
+---
+<Base title="BioAlerta — Biodiversidad en Riesgo en Bolivia">
+
+  <!-- HERO -->
+  <section style="
+    min-height: calc(100vh - var(--nav-height));
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    overflow: hidden;
+  ">
+    <!-- Left: Typography -->
+    <div style="
+      display: flex;
+      align-items: center;
+      padding: 5rem clamp(1.5rem, 5vw, 4rem) 5rem clamp(1rem, 4vw, 3rem);
+      position: relative;
+      z-index: 1;
+    ">
+      <div style="max-width:560px">
+        <p style="
+          font-size:0.72rem;
+          font-weight:700;
+          letter-spacing:0.12em;
+          text-transform:uppercase;
+          color:var(--color-accent);
+          margin-bottom:1.5rem;
+        ">Aprendizaje automático supervisado · Bolivia 2026</p>
+
+        <h1 style="margin-bottom:1.5rem;color:var(--color-text)">
+          Bolivia alberga
+          <span style="color:var(--color-threat)">1,704</span>
+          especies nativas en riesgo silencioso
+        </h1>
+
+        <p style="font-size:1.1rem;color:var(--color-secondary);margin-bottom:2.5rem;line-height:1.75">
+          Un modelo de Random Forest predice el riesgo de extinción de aves y mamíferos
+          nativos a partir de rasgos biológicos, factores ambientales y presión humana.
+          <strong style="color:var(--color-text)">49 especies sin evaluación IUCN</strong> fueron identificadas como potencialmente amenazadas.
+        </p>
+
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <a href="/mapa" class="btn btn-primary">Explorar el mapa</a>
+          <a href="/especies" class="btn btn-outline">Ver especies</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Bolivia SVG map -->
+    <div
+      id="hero-right"
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-surface);
+        position: relative;
+        overflow: hidden;
+        padding: 0;
+      "
+    >
+      <!-- Geometric pattern background -->
+      <svg
+        aria-hidden="true"
+        style="position:absolute;inset:0;width:100%;height:100%;opacity:0.35"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <pattern id="geo-dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+            <circle cx="1.5" cy="1.5" r="1.5" fill="var(--color-accent)" opacity="0.45"/>
+          </pattern>
+          <pattern id="geo-lines" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="40" stroke="var(--color-accent)" stroke-width="0.6" opacity="0.2"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#geo-dots)"/>
+        <rect width="100%" height="100%" fill="url(#geo-lines)"/>
+      </svg>
+
+      <!-- Bolivia SVG -->
+      <img
+        src="/bo.svg"
+        alt="Mapa de Bolivia"
+        class="bolivia-hero-map"
+        style="
+          position: absolute;
+          width: 82%;
+          height: 82%;
+          object-fit: contain;
+          object-position: center;
+          opacity: 0;
+          transform: translateX(32px) scale(0.94);
+          filter: sepia(1) saturate(0.75) hue-rotate(95deg) brightness(0.72) drop-shadow(0 8px 40px rgba(26,107,60,0.18));
+        "
+      />
+    </div>
+
+    <style>
+      .bolivia-hero-map {
+        transition:
+          opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .bolivia-hero-map.visible {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    </style>
+
+    <script>
+      const img = document.querySelector('.bolivia-hero-map');
+      if (img) {
+        const obs = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              img.classList.add('visible');
+              obs.disconnect();
+            }
+          },
+          { threshold: 0.15 }
+        );
+        obs.observe(img);
+      }
+    </script>
+  </section>
+
+  <!-- STATS BAR -->
+  <section style="
+    background:var(--color-surface);
+    border-top:1px solid var(--color-border);
+    border-bottom:1px solid var(--color-border);
+    padding:3rem 0;
+  ">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:3rem">
+        {[
+          { n: '49', label: 'especies predichas amenazadas', sub: 'sin evaluación IUCN previa', color: 'var(--color-threat)' },
+          { n: '1,704', label: 'especies nativas monitoreadas', sub: 'aves y mamíferos de Bolivia', color: 'var(--color-accent)' },
+          { n: '0.848', label: 'ROC-AUC en aves', sub: 'Random Forest, validación cruzada', color: 'var(--color-text)' },
+          { n: '1.37M', label: 'registros GBIF analizados', sub: 'ocurrencias 2000–2024', color: 'var(--color-text)' },
+        ].map(stat => (
+          <div>
+            <p style={`font-size:clamp(2rem,4vw,3rem);font-weight:700;font-family:'Playfair Display',serif;color:${stat.color};line-height:1;margin-bottom:0.5rem`}>
+              {stat.n}
+            </p>
+            <p style="font-size:0.875rem;font-weight:600;color:var(--color-text);margin-bottom:0.2rem">{stat.label}</p>
+            <p style="font-size:0.78rem;color:var(--color-secondary)">{stat.sub}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- SPECIES GALLERY -->
+  <section class="section">
+    <div class="container">
+      <p style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:1rem">Especies en riesgo</p>
+      <h2 style="margin-bottom:0.75rem">Vida silvestre bajo amenaza</h2>
+      <div class="divider"></div>
+      <p style="max-width:560px;margin-bottom:3rem;font-size:1rem">
+        Estas son las especies con mayor probabilidad de riesgo según el modelo.
+        Algunas ya cuentan con categoría IUCN; otras son identificadas por primera vez.
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem">
+        {SPOTLIGHT.slice(0, 6).map(sp => (
+          <SpeciesCard species={sp} large={false} />
+        ))}
+      </div>
+
+      <div style="margin-top:2.5rem;text-align:center">
+        <a href="/especies" class="btn btn-outline">Ver todas las especies</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- BIODIVERSIDAD EN BOLIVIA -->
+  <section style="background:var(--color-surface);border-top:1px solid var(--color-border);border-bottom:1px solid var(--color-border)" class="section">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center">
+        <div>
+          <p style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:1rem">Contexto</p>
+          <h2 style="margin-bottom:0.75rem">Bolivia: un megadiverso en peligro</h2>
+          <div class="divider"></div>
+          <p style="margin-bottom:1.25rem;font-size:1rem">
+            Bolivia es el <strong style="color:var(--color-text)">8.° país más diverso en aves del mundo</strong> con más de 1,400 especies,
+            y el <strong style="color:var(--color-text)">11.° en mamíferos</strong> con 390 especies registradas.
+          </p>
+          <p style="margin-bottom:1.25rem">
+            Su gradiente altitudinal extraordinario —desde los 90 m en el Pantanal hasta los 6,542 m del Nevado Sajama—
+            genera más de 12 ecorregiones distintas en menos de 1.1 millones de km².
+          </p>
+          <p style="margin-bottom:2rem">
+            Sin embargo, <strong style="color:var(--color-threat)">más del 5% de la cobertura forestal se perdió entre 2001 y 2023</strong>,
+            y los incendios de 2019 devastaron más de 5 millones de hectáreas en Beni y la Chiquitanía.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+            {[
+              { n: '>1,400', label: 'especies de aves', rank: '#8 mundial' },
+              { n: '390', label: 'especies de mamíferos', rank: '#11 mundial' },
+              { n: '5M ha', label: 'quemadas en 2019', rank: 'Beni + Chiquitanía' },
+              { n: '>5%', label: 'bosque perdido', rank: '2001–2023' },
+            ].map(item => (
+              <div style="border-left:3px solid var(--color-accent);padding-left:0.75rem">
+                <p style="font-size:1.3rem;font-weight:700;font-family:'Playfair Display',serif;color:var(--color-text)">{item.n}</p>
+                <p style="font-size:0.78rem;color:var(--color-text);font-weight:500">{item.label}</p>
+                <p style="font-size:0.72rem;color:var(--color-secondary)">{item.rank}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <img
+            src="/img/mapa_ecorregiones_bolivia.png"
+            alt="Mapa de ecorregiones de Bolivia"
+            style="width:100%;border-radius:2px;border:1px solid var(--color-border)"
+          />
+          <p style="font-size:0.75rem;color:var(--color-secondary);margin-top:0.5rem;text-align:center">Ecorregiones de Bolivia</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AMENAZAS -->
+  <section class="section">
+    <div class="container">
+      <p style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:1rem">Factores de riesgo</p>
+      <h2 style="margin-bottom:0.75rem;max-width:600px">Los rasgos biológicos predicen mejor que el ambiente</h2>
+      <div class="divider"></div>
+      <p style="max-width:560px;margin-bottom:3rem">
+        El modelo identificó que los <strong style="color:var(--color-text)">rasgos intrínsecos</strong> —masa corporal, longitud alar, tamaño de rango—
+        son más predictivos del riesgo que los factores ambientales o de presión humana.
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem">
+        {[
+          {
+            icon: '🐾', title: 'Masa corporal',
+            desc: 'La variable más importante para mamíferos (38.9%). Los K-estrategas con baja tasa reproductiva son más vulnerables.',
+            cat: 'Rasgo biológico',
+          },
+          {
+            icon: '🦅', title: 'Longitud alar',
+            desc: 'Primera variable en aves (12.4%). Aves grandes con alas largas —rapaces, crácidos— son las más en riesgo.',
+            cat: 'Rasgo biológico',
+          },
+          {
+            icon: '🗺️', title: 'Tamaño de rango',
+            desc: 'Especies con distribución menor a 5,000 km² son mucho más vulnerables a eventos locales como incendios o minería.',
+            cat: 'Distribución geográfica',
+          },
+          {
+            icon: '🌲', title: 'Cobertura forestal',
+            desc: 'La pérdida forestal reciente (2015-2023) tiene correlación positiva con el riesgo, especialmente en mamíferos.',
+            cat: 'Factor ambiental',
+          },
+        ].map(item => (
+          <div style="padding:1.75rem;border:1px solid var(--color-border);border-radius:2px;background:var(--color-surface)">
+            <div style="font-size:1.8rem;margin-bottom:0.75rem">{item.icon}</div>
+            <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent);margin-bottom:0.35rem">{item.cat}</p>
+            <h3 style="font-size:1rem;margin-bottom:0.5rem;font-family:'Playfair Display',serif">{item.title}</h3>
+            <p style="font-size:0.85rem;line-height:1.6">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section style="background:var(--color-text);padding:5rem 0">
+    <div class="container" style="text-align:center">
+      <p style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:1rem">Explora los resultados</p>
+      <h2 style="color:white;margin-bottom:1rem;max-width:600px;margin-left:auto;margin-right:auto">
+        La biodiversidad de Bolivia necesita ser vista para ser protegida
+      </h2>
+      <p style="color:#8B949E;max-width:480px;margin:0 auto 2.5rem">
+        Navega el mapa interactivo, conoce las especies en riesgo y explora la metodología del modelo.
+      </p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <a href="/mapa" class="btn" style="background:var(--color-accent);color:white;border:2px solid var(--color-accent)">Ver mapa interactivo</a>
+        <a href="/metodologia" class="btn" style="background:transparent;color:white;border:2px solid #444">Ver metodología</a>
+      </div>
+    </div>
+  </section>
+
+</Base>

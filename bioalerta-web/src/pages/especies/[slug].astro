@@ -1,0 +1,25 @@
+---
+import Base from '../../layouts/Base.astro';
+import SpeciesDetail from '../../components/SpeciesDetail.astro';
+import { SPOTLIGHT, toSlug } from '../../data/species_spotlight';
+
+export function getStaticPaths() {
+  return SPOTLIGHT.map((species, i) => ({
+    params: { slug: toSlug(species.scientificName) },
+    props: {
+      species,
+      prev: i > 0 ? SPOTLIGHT[i - 1] : null,
+      next: i < SPOTLIGHT.length - 1 ? SPOTLIGHT[i + 1] : null,
+    },
+  }));
+}
+
+const { species, prev, next } = Astro.props;
+---
+
+<Base
+  title={`${species.scientificName} — BioAlerta`}
+  description={species.description}
+>
+  <SpeciesDetail species={species} prev={prev} next={next} />
+</Base>

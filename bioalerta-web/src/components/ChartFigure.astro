@@ -1,0 +1,53 @@
+---
+interface Props {
+  src: string;
+  caption: string;
+  alt?: string;
+  wide?: boolean;
+}
+const { src, caption, alt = caption, wide = false } = Astro.props;
+---
+<figure style={`margin:2.5rem 0;${wide ? 'max-width:100%' : 'max-width:800px'}`}>
+  <div style="
+    border:1px solid var(--color-border);
+    border-radius:2px;
+    overflow:hidden;
+    background:white;
+    cursor:zoom-in;
+  " onclick={`document.getElementById('lightbox-${src.replace(/\W/g,'_')}').showModal()`}>
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      style="width:100%;height:auto;display:block"
+    />
+  </div>
+  <figcaption style="
+    margin-top:0.75rem;
+    font-size:0.8rem;
+    color:var(--color-secondary);
+    line-height:1.5;
+    border-left:3px solid var(--color-accent);
+    padding-left:0.75rem;
+  ">{caption}</figcaption>
+</figure>
+
+<!-- Lightbox dialog -->
+<dialog
+  id={`lightbox-${src.replace(/\W/g,'_')}`}
+  style="
+    max-width:90vw;
+    max-height:90vh;
+    padding:0;
+    border:none;
+    background:none;
+    overflow:hidden;
+  "
+  onclick="this.close()"
+>
+  <img
+    src={src}
+    alt={alt}
+    style="max-width:85vw;max-height:85vh;object-fit:contain;border-radius:2px;box-shadow:0 8px 64px rgba(0,0,0,0.4)"
+  />
+</dialog>

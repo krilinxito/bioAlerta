@@ -1,0 +1,21 @@
+---
+interface Props {
+  prob: number;
+  showLabel?: boolean;
+}
+const { prob, showLabel = true } = Astro.props;
+const pct = Math.round(prob * 100);
+const color = prob > 0.15 ? 'var(--color-threat)' : prob > 0.05 ? 'var(--color-threat-low)' : 'var(--color-accent)';
+const label = prob > 0.15 ? 'Alto riesgo' : prob > 0.05 ? 'Riesgo medio' : 'Bajo riesgo';
+---
+<div style="width:100%">
+  {showLabel && (
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem">
+      <span style={`font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${color}`}>{label}</span>
+      <span style="font-size:0.7rem;font-weight:700;color:var(--color-secondary)">{pct}%</span>
+    </div>
+  )}
+  <div style="height:3px;background:var(--color-border);border-radius:1px;overflow:hidden">
+    <div style={`height:100%;width:${Math.min(pct, 100)}%;background:${color};border-radius:1px;transition:width 0.6s ease`}></div>
+  </div>
+</div>

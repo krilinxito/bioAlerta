@@ -1,0 +1,264 @@
+---
+import Base from '../layouts/Base.astro';
+import ChartFigure from '../components/ChartFigure.astro';
+---
+<Base title="Metodología — BioAlerta" description="Metodología de aprendizaje automático supervisado para predicción de riesgo de extinción">
+
+  <!-- Header -->
+  <section style="padding:5rem 0 3rem;border-bottom:1px solid var(--color-border)">
+    <div class="container">
+      <p style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:1rem">Metodología</p>
+      <h1 style="margin-bottom:0.75rem;max-width:700px">Aprendizaje automático supervisado para la conservación</h1>
+      <div class="divider"></div>
+      <p style="max-width:620px;font-size:1.05rem">
+        El proyecto BioAlerta aplica el marco <strong style="color:var(--color-text)">CRISP-DM</strong> para construir un pipeline reproducible
+        que predice el riesgo de extinción de 1,704 especies nativas de Bolivia,
+        integrando datos de GBIF, IUCN, AVONET, PanTHERIA, WorldClim, RAISG y Global Forest Watch.
+      </p>
+    </div>
+  </section>
+
+  <!-- Pipeline -->
+  <section class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Pipeline del modelo</h2>
+      <div class="divider"></div>
+
+      <div style="display:grid;gap:0;border:1px solid var(--color-border);border-radius:2px;overflow:hidden;margin:2.5rem 0;max-width:860px">
+        {[
+          { step: '01', title: 'Descarga de ocurrencias', text: '1.37M registros GBIF de aves y mamíferos de Bolivia (2000–2024). Limpieza: eliminación de duplicados espaciales, coordenadas centinela y registros sin identificación a nivel de especie.' },
+          { step: '02', title: 'Integración de datos', text: 'Cruce con IUCN (vía Wikidata), rasgos biológicos AVONET (aves, 11K spp) y PanTHERIA (mamíferos, 5.4K spp), datos climáticos WorldClim v2.1 y capas RAISG de presión humana.' },
+          { step: '03', title: 'Extracción de features espaciales', text: 'Para cada especie se calcula el centroide de sus ocurrencias y se extraen valores de rasters climáticos (6 variables WorldClim), cobertura MapBiomas (14 clases), pérdida forestal GFW y porcentaje de solapamiento con ANP, territorios indígenas, minería y petróleo.' },
+          { step: '04', title: 'Construcción del dataset final', text: 'Imputación de valores faltantes con mediana del conjunto de entrenamiento. One-hot encoding de variables categóricas (hábitat, nivel trófico, estilo de vida). Dataset final: 1,313 aves y 189 mamíferos con 51 features.' },
+          { step: '05', title: 'Análisis exploratorio', text: 'Desbalance severo: 1:35 en aves (2.7% amenazadas), 1:14 en mamíferos (6.9%). Alta correlación entre rasgos biológicos y el target. Variables ambientales son menos predictivas que los rasgos intrínsecos.' },
+          { step: '06', title: 'Modelado y evaluación', text: 'Stratified K-Fold (5 folds) con class_weight="balanced". Cinco clasificadores: Logistic Regression, Random Forest, Gradient Boosting, SVM, KNN. Random Forest gana en ROC-AUC y PR-AUC. Umbral adaptativo = prevalencia de entrenamiento para maximizar recall.' },
+        ].map((item, i) => (
+          <div style={`
+            display:grid;grid-template-columns:80px 1fr;gap:0;
+            border-bottom:${i < 5 ? '1px solid var(--color-border)' : 'none'};
+          `}>
+            <div style="background:var(--color-surface);padding:1.5rem 1rem;display:flex;align-items:flex-start;justify-content:center;border-right:1px solid var(--color-border)">
+              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.06em;color:var(--color-accent);font-family:'Playfair Display',serif;font-size:1.2rem">{item.step}</span>
+            </div>
+            <div style="padding:1.5rem">
+              <h3 style="font-size:1rem;margin-bottom:0.5rem;font-family:'Playfair Display',serif">{item.title}</h3>
+              <p style="font-size:0.875rem;line-height:1.65">{item.text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Model comparison -->
+  <section style="background:var(--color-surface);border-top:1px solid var(--color-border);border-bottom:1px solid var(--color-border)" class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Comparación de modelos</h2>
+      <div class="divider"></div>
+      <p style="max-width:560px;margin-bottom:2rem">
+        Random Forest superó a los demás clasificadores en todas las métricas clave,
+        con ROC-AUC de <strong style="color:var(--color-text)">0.848 en aves</strong> y
+        <strong style="color:var(--color-text)">0.792 en mamíferos</strong>.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;margin-bottom:2.5rem">
+        <div>
+          <h3 style="font-size:0.875rem;font-weight:600;margin-bottom:1rem;font-family:'Inter',sans-serif">Aves — ROC-AUC (media ± std)</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead>
+              <tr style="border-bottom:2px solid var(--color-border)">
+                <th style="text-align:left;padding:0.5rem 0;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Modelo</th>
+                <th style="text-align:right;padding:0.5rem 0;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">ROC-AUC</th>
+                <th style="text-align:right;padding:0.5rem 0;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">PR-AUC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { name: 'Random Forest', roc: '0.848', pr: '0.192', best: true },
+                { name: 'Gradient Boosting', roc: '0.831', pr: '0.168', best: false },
+                { name: 'SVM', roc: '0.812', pr: '0.145', best: false },
+                { name: 'Logistic Regression', roc: '0.794', pr: '0.121', best: false },
+                { name: 'KNN', roc: '0.761', pr: '0.098', best: false },
+              ].map(row => (
+                <tr style={`border-bottom:1px solid var(--color-border);background:${row.best ? 'var(--color-accent-light)' : 'transparent'}`}>
+                  <td style={`padding:0.6rem 0;font-weight:${row.best ? '700' : '400'};color:${row.best ? 'var(--color-accent)' : 'var(--color-text)'}`}>
+                    {row.name} {row.best ? '★' : ''}
+                  </td>
+                  <td style="text-align:right;padding:0.6rem 0;font-weight:600;color:var(--color-text)">{row.roc}</td>
+                  <td style="text-align:right;padding:0.6rem 0;color:var(--color-secondary)">{row.pr}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3 style="font-size:0.875rem;font-weight:600;margin-bottom:1rem;font-family:'Inter',sans-serif">Mamíferos — ROC-AUC (media ± std)</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead>
+              <tr style="border-bottom:2px solid var(--color-border)">
+                <th style="text-align:left;padding:0.5rem 0;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Modelo</th>
+                <th style="text-align:right;padding:0.5rem 0;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">ROC-AUC</th>
+                <th style="text-align:right;padding:0.5rem 0;font-size:0.68rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">PR-AUC</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { name: 'Random Forest', roc: '0.792', pr: '0.298', best: true },
+                { name: 'Gradient Boosting', roc: '0.775', pr: '0.271', best: false },
+                { name: 'SVM', roc: '0.748', pr: '0.231', best: false },
+                { name: 'Logistic Regression', roc: '0.731', pr: '0.198', best: false },
+                { name: 'KNN', roc: '0.694', pr: '0.187', best: false },
+              ].map(row => (
+                <tr style={`border-bottom:1px solid var(--color-border);background:${row.best ? 'var(--color-accent-light)' : 'transparent'}`}>
+                  <td style={`padding:0.6rem 0;font-weight:${row.best ? '700' : '400'};color:${row.best ? 'var(--color-accent)' : 'var(--color-text)'}`}>
+                    {row.name} {row.best ? '★' : ''}
+                  </td>
+                  <td style="text-align:right;padding:0.6rem 0;font-weight:600;color:var(--color-text)">{row.roc}</td>
+                  <td style="text-align:right;padding:0.6rem 0;color:var(--color-secondary)">{row.pr}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <ChartFigure
+        src="/img/charts/img_modelos_comparacion.png"
+        caption="Comparación de los 5 modelos supervisados en ROC-AUC, PR-AUC y F1-macro para aves y mamíferos. Random Forest domina consistentemente en ambas clases."
+        wide={true}
+      />
+    </div>
+  </section>
+
+  <!-- Feature importance -->
+  <section class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Importancia de variables</h2>
+      <div class="divider"></div>
+      <p style="max-width:560px;margin-bottom:2.5rem">
+        Los rasgos biológicos intrínsecos dominan la predicción en ambas clases,
+        relegando a un segundo plano las variables ambientales y de presión humana.
+        Esto sugiere que la vulnerabilidad está codificada en la biología de la especie,
+        no solo en su entorno.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;margin-bottom:2.5rem">
+        <div style="padding:1.5rem;border:1px solid var(--color-border);border-radius:2px;background:var(--color-surface)">
+          <h3 style="font-size:0.9rem;margin-bottom:1rem;font-family:'Inter',sans-serif;font-weight:600">Top 3 — Aves</h3>
+          {[
+            { var: 'Wing.Length', imp: 12.4, desc: 'Longitud alar' },
+            { var: 'Beak.Depth', imp: 9.8, desc: 'Profundidad del pico' },
+            { var: 'Range.Size', imp: 9.1, desc: 'Tamaño de rango geográfico' },
+          ].map(item => (
+            <div style="margin-bottom:1rem">
+              <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem">
+                <span style="font-size:0.8rem;font-weight:600;color:var(--color-text)">{item.var}</span>
+                <span style="font-size:0.8rem;color:var(--color-secondary)">{item.desc}</span>
+                <span style="font-size:0.8rem;font-weight:700;color:#2471A3">{item.imp}%</span>
+              </div>
+              <div style="height:4px;background:var(--color-border);border-radius:2px">
+                <div style={`height:100%;width:${item.imp * 5}%;background:#2471A3;border-radius:2px`}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style="padding:1.5rem;border:1px solid var(--color-border);border-radius:2px;background:var(--color-surface)">
+          <h3 style="font-size:0.9rem;margin-bottom:1rem;font-family:'Inter',sans-serif;font-weight:600">Top 3 — Mamíferos</h3>
+          {[
+            { var: 'body_mass_g', imp: 38.9, desc: 'Masa corporal adulta' },
+            { var: 'range_area_km2', imp: 11.2, desc: 'Área de distribución' },
+            { var: 'pct_forest_loss_recent', imp: 8.1, desc: 'Pérdida forestal reciente' },
+          ].map(item => (
+            <div style="margin-bottom:1rem">
+              <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem">
+                <span style="font-size:0.8rem;font-weight:600;color:var(--color-text)">{item.var}</span>
+                <span style="font-size:0.8rem;color:var(--color-secondary)">{item.desc}</span>
+                <span style="font-size:0.8rem;font-weight:700;color:#784212">{item.imp}%</span>
+              </div>
+              <div style="height:4px;background:var(--color-border);border-radius:2px">
+                <div style={`height:100%;width:${item.imp * 2}%;background:#784212;border-radius:2px`}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <ChartFigure
+        src="/img/charts/img_importancia_vars.png"
+        caption="Importancia de las 20 variables más predictivas del Random Forest para aves (izq.) y mamíferos (der.). La masa corporal domina en mamíferos; la morfología alar y del pico en aves."
+        wide={true}
+      />
+    </div>
+  </section>
+
+  <!-- Charts grid -->
+  <section style="background:var(--color-surface);border-top:1px solid var(--color-border)" class="section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Análisis exploratorio</h2>
+      <div class="divider"></div>
+      <p style="max-width:560px;margin-bottom:2.5rem">
+        El desbalance severo de clases y las distribuciones de variables clave
+        definen las decisiones de diseño del modelo.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+        <ChartFigure
+          src="/img/charts/img_desbalance.png"
+          caption="Distribución del target: 36 amenazadas (2.7%) vs 1,277 no amenazadas en aves; 13 (6.9%) vs 176 en mamíferos."
+        />
+        <ChartFigure
+          src="/img/charts/img_corr_target.png"
+          caption="Correlaciones punto-biserial de las 20 variables con mayor correlación con el target binario."
+        />
+        <ChartFigure
+          src="/img/charts/img_dist_aves.png"
+          caption="Distribuciones de features ambientales y morfológicas para aves, separadas por clase amenazada vs no amenazada."
+        />
+        <ChartFigure
+          src="/img/charts/img_dist_mamiferos.png"
+          caption="Distribuciones equivalentes para mamíferos. La masa corporal muestra la mayor separación entre clases."
+        />
+      </div>
+
+      <div style="margin-top:2rem">
+        <ChartFigure
+          src="/img/charts/img_pred_proba.png"
+          caption="Distribución de probabilidades predichas para las 202 especies sin evaluación IUCN. El umbral adaptativo se aplica en la prevalencia de entrenamiento (línea vertical)."
+          wide={true}
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- Umbral adaptativo -->
+  <section class="section">
+    <div class="container" style="max-width:760px">
+      <h2 style="margin-bottom:0.75rem">Umbral adaptativo</h2>
+      <div class="divider"></div>
+      <p style="margin-bottom:1.25rem;font-size:1.05rem">
+        Random Forest tiende a subestimar las probabilidades de la clase minoritaria cuando el desbalance es severo.
+        En lugar de usar el umbral estándar de 0.5, se aplicó un <strong style="color:var(--color-text)">umbral igual a la prevalencia de entrenamiento</strong>:
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2rem 0;max-width:480px">
+        <div style="padding:1.5rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:2px;text-align:center">
+          <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#2471A3">2.7%</p>
+          <p style="font-size:0.8rem;color:var(--color-secondary);margin-top:0.25rem">Umbral para aves<br/>(36/1313 amenazadas)</p>
+        </div>
+        <div style="padding:1.5rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:2px;text-align:center">
+          <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#784212">6.9%</p>
+          <p style="font-size:0.8rem;color:var(--color-secondary);margin-top:0.25rem">Umbral para mamíferos<br/>(13/189 amenazadas)</p>
+        </div>
+      </div>
+      <p style="margin-bottom:1rem">
+        Este ajuste maximiza el <strong style="color:var(--color-text)">recall</strong> de la clase amenazada,
+        priorizando no perder especies verdaderamente en riesgo (falsos negativos) sobre la precisión.
+        En conservación, un falso negativo —ignorar una especie amenazada— tiene consecuencias irreversibles.
+      </p>
+      <p>
+        Con el umbral adaptativo, el modelo generó <strong style="color:var(--color-threat)">49 predicciones positivas</strong>:
+        31 aves y 18 mamíferos (de los cuales 5 son exóticos, excluidos del análisis de conservación).
+      </p>
+    </div>
+  </section>
+
+</Base>

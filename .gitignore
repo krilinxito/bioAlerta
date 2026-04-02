@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*.egg-info/
+.env
+
+# Conda
+.conda/
+
+# Datos pesados — manejados por DVC
+data/raw/gbif/
+data/processed/
+data/worldclim/
+data/gfw/
+data/mapbiomas/
+data/raisg/
+data/mining/
+
+# Web — dependencias y build
+bioalerta-web/node_modules/
+bioalerta-web/dist/
+bioalerta-web/.astro/
+
+# LaTeX artifacts
+informe/*.aux
+informe/*.log
+informe/*.out
+informe/*.toc
+informe/*.fls
+informe/*.fdb_latexmk
+informe/*.synctex.gz
+
+# Miscelánea
+.DS_Store
+*.swp

@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import MapIsland from '../components/MapIsland';
+---
+<Base
+  title="Mapa interactivo — BioAlerta"
+  description="Mapa interactivo de especies amenazadas y factores ambientales en Bolivia"
+  fullHeight={true}
+>
+  <div style="height:100%;display:flex;flex-direction:column">
+    <!-- Top bar -->
+    <div style="
+      padding:0.875rem 1.5rem;
+      border-bottom:1px solid var(--color-border);
+      background:var(--color-surface);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex-shrink:0;
+    ">
+      <div>
+        <h1 style="font-size:1rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--color-text)">
+          Mapa de biodiversidad
+        </h1>
+        <p style="font-size:0.75rem;color:var(--color-secondary);margin-top:0.1rem">
+          1,704 especies nativas · Bolivia 2024
+        </p>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:center">
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <span style="width:8px;height:8px;border-radius:50%;background:#C0392B;display:inline-block"></span>
+          <span style="font-size:0.72rem;color:var(--color-secondary)">Alto riesgo</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <span style="width:8px;height:8px;border-radius:50%;background:#D4A017;display:inline-block"></span>
+          <span style="font-size:0.72rem;color:var(--color-secondary)">Riesgo medio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.4rem">
+          <span style="width:8px;height:8px;border-radius:50%;background:#1A6B3C;display:inline-block"></span>
+          <span style="font-size:0.72rem;color:var(--color-secondary)">Sin amenaza</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map island -->
+    <div style="flex:1;overflow:hidden">
+      <MapIsland client:load />
+    </div>
+  </div>
+</Base>
