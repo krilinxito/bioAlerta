@@ -9,7 +9,7 @@ Un proyecto de ML sin versionado produce resultados que no se pueden reproducir:
 ## Arquitectura general
 
 ```
-Código / Notebooks  →  Git + GitHubbash: /c/Users/TU_USUARIO/miniconda3/etc/profile.d/conda.sh: No such file or directory
+Código / Notebooks  →  Git +  Github
 Datos (2.2 GB)      →  DVC + DagsHub Storage
 Experimentos ML     →  MLflow + DagsHub Experiments
 ```
