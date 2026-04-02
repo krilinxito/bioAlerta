@@ -295,4 +295,8 @@ dependencies:
       - websocket-client==1.9.0
       - widgetsnbextension==4.0.15
       - xarray==2026.2.0
+      - mlflow==3.10.1
+      - dagshub==0.6.9
+      - dvc==3.67.1
+      - dvc-s3==3.3.0
 prefix: /home/max1/.conda/envs/bioalerta
