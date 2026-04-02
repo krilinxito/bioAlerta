@@ -1,0 +1,29 @@
+name: bioalerta
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - scipy
+  - geopandas
+  - rasterio
+  - fastparquet
+  - pyarrow
+  - jupyterlab
+  - ipywidgets
+  - pip
+  - pip:
+      - mlflow
+      - dagshub
+      - dvc[s3]
+      - folium
+      - mapclassify
+      - rasterstats
+      - rioxarray
+      - pygbif
+      - requests-cache
+      - geojson-rewind
