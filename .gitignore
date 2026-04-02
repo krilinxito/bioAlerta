@@ -10,12 +10,15 @@ __pycache__/
 
 # Datos pesados — manejados por DVC
 data/raw/gbif/
+data/raw/iucn/
 data/processed/
 data/worldclim/
 data/gfw/
 data/mapbiomas/
 data/raisg/
 data/mining/
+
+data/traits/
 
 # Web — dependencias y build
 bioalerta-web/node_modules/
@@ -30,6 +33,10 @@ informe/*.toc
 informe/*.fls
 informe/*.fdb_latexmk
 informe/*.synctex.gz
+
+# Claude / Agents
+.claude/
+.agents/
 
 # Miscelánea
 .DS_Store
