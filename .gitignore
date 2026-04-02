@@ -41,3 +41,4 @@ informe/*.synctex.gz
 # Miscelánea
 .DS_Store
 *.swp
+/data
