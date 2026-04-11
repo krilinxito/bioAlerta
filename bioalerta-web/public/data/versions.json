@@ -1,0 +1,8 @@
+[
+  {
+    "version": "v1.0",
+    "date": "2026-04-10",
+    "description": "Pipeline inicial: GBIF Bolivia, Wikidata IUCN, RandomForest",
+    "file": "species_v1.0.json"
+  }
+]

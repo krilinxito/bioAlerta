@@ -4,17 +4,25 @@ import SpeciesCard from '../components/SpeciesCard.astro';
 import ThreatGauge from '../components/ThreatGauge.astro';
 import { SPOTLIGHT } from '../data/species_spotlight';
 
-// Load predictions data at build time
+// Load predictions data at build time (default: latest species.json)
 let predictions: any[] = [];
+let versions: any[] = [];
 try {
   const fs = await import('fs');
   const path = await import('path');
+
   const dataPath = path.resolve('public/data/species.json');
   if (fs.existsSync(dataPath)) {
     predictions = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
   }
+
+  const versionsPath = path.resolve('public/data/versions.json');
+  if (fs.existsSync(versionsPath)) {
+    versions = JSON.parse(fs.readFileSync(versionsPath, 'utf-8'));
+  }
 } catch (e) {
   predictions = [];
+  versions = [];
 }
 
 // Filter out exotics and sort by prob
@@ -27,6 +35,7 @@ const aves = threatened.filter(p => p.class === 'Aves');
 const mamiferos = threatened.filter(p => p.class === 'Mammalia');
 
 const spotlightNames = new Set(SPOTLIGHT.map(s => s.scientificName));
+const latestVersion = versions[0]?.version ?? 'v1.0';
 ---
 <Base title="Especies — BioAlerta" description="Galería de especies bolivianas predichas como amenazadas por el modelo">
 
@@ -38,7 +47,7 @@ const spotlightNames = new Set(SPOTLIGHT.map(s => s.scientificName));
       <div class="divider"></div>
       <p style="max-width:600px;font-size:1.05rem;margin-top:0">
         El modelo Random Forest identificó <strong style="color:var(--color-threat)">{threatened.length} especies nativas</strong> como
-        potencialmente amenazadas entre las 202 sin evaluación IUCN. Las probabilidades superan el umbral
+        potencialmente amenazadas entre las sin evaluación IUCN. Las probabilidades superan el umbral
         adaptativo basado en la prevalencia de clases en los datos de entrenamiento.
       </p>
     </div>
@@ -47,7 +56,7 @@ const spotlightNames = new Set(SPOTLIGHT.map(s => s.scientificName));
   <!-- Summary stats -->
   <section style="background:var(--color-surface);border-bottom:1px solid var(--color-border);padding:2rem 0">
     <div class="container">
-      <div style="display:flex;gap:3rem;flex-wrap:wrap">
+      <div style="display:flex;gap:3rem;flex-wrap:wrap;align-items:flex-end">
         <div>
           <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:var(--color-threat)">{threatened.length}</p>
           <p style="font-size:0.8rem;color:var(--color-secondary)">predichas amenazadas (nativas)</p>
@@ -60,10 +69,20 @@ const spotlightNames = new Set(SPOTLIGHT.map(s => s.scientificName));
           <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#784212">{mamiferos.length}</p>
           <p style="font-size:0.8rem;color:var(--color-secondary)">mamíferos</p>
         </div>
-        <div>
-          <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:var(--color-text)">202</p>
-          <p style="font-size:0.8rem;color:var(--color-secondary)">sin IUCN evaluadas</p>
-        </div>
+
+        <!-- Version selector -->
+        {versions.length > 1 && (
+          <div style="margin-left:auto">
+            <label for="version-select" style="font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary);display:block;margin-bottom:0.35rem">Versión del estudio</label>
+            <select id="version-select" style="font-size:0.85rem;padding:0.4rem 0.75rem;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text);cursor:pointer">
+              {versions.map(v => (
+                <option value={v.file} selected={v.version === latestVersion} title={v.description}>
+                  {v.version} — {v.date}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </div>
   </section>
@@ -85,56 +104,101 @@ const spotlightNames = new Set(SPOTLIGHT.map(s => s.scientificName));
   </section>
 
   <!-- FULL LIST: all predicted threatened (non-exotic) -->
-  {nativePredictions.length > 0 && (
-    <section style="background:var(--color-surface);border-top:1px solid var(--color-border)" class="section">
-      <div class="container">
-        <h2 style="margin-bottom:0.75rem">Lista completa de predicciones</h2>
-        <div class="divider"></div>
-        <p style="max-width:560px;margin-bottom:2.5rem">
-          Todas las {nativePredictions.length} especies nativas sin evaluación IUCN, ordenadas por probabilidad de amenaza.
-        </p>
+  <section style="background:var(--color-surface);border-top:1px solid var(--color-border)" class="section" id="tabla-section">
+    <div class="container">
+      <h2 style="margin-bottom:0.75rem">Lista completa de predicciones</h2>
+      <div class="divider"></div>
+      <p style="max-width:560px;margin-bottom:2.5rem" id="tabla-desc">
+        Todas las {nativePredictions.length} especies nativas, ordenadas por probabilidad de amenaza.
+      </p>
 
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
-            <thead>
-              <tr style="border-bottom:2px solid var(--color-border)">
-                <th style="text-align:left;padding:0.75rem 1rem 0.75rem 0;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Especie</th>
-                <th style="text-align:left;padding:0.75rem 0.5rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Clase</th>
-                <th style="text-align:left;padding:0.75rem 0.5rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Predicción</th>
-                <th style="text-align:left;padding:0.75rem 0.5rem;min-width:200px;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Probabilidad</th>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.85rem" id="species-table">
+          <thead>
+            <tr style="border-bottom:2px solid var(--color-border)">
+              <th style="text-align:left;padding:0.75rem 1rem 0.75rem 0;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Especie</th>
+              <th style="text-align:left;padding:0.75rem 0.5rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Clase</th>
+              <th style="text-align:left;padding:0.75rem 0.5rem;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Predicción</th>
+              <th style="text-align:left;padding:0.75rem 0.5rem;min-width:200px;font-size:0.7rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary)">Probabilidad</th>
+            </tr>
+          </thead>
+          <tbody id="species-tbody">
+            {nativePredictions.map((sp) => (
+              <tr style={`border-bottom:1px solid var(--color-border);background:${sp.pred_threatened === 1 ? 'var(--color-threat-light)' : 'transparent'}`}>
+                <td style="padding:0.75rem 1rem 0.75rem 0">
+                  <span style="font-style:italic;font-weight:500;color:var(--color-text)">{sp.species}</span>
+                  {spotlightNames.has(sp.species) && (
+                    <span style="margin-left:0.4rem;font-size:0.65rem;background:var(--color-accent-light);color:var(--color-accent);padding:1px 5px;border-radius:2px;font-weight:600">★ Destacada</span>
+                  )}
+                </td>
+                <td style="padding:0.75rem 0.5rem">
+                  <span class={`badge ${sp.class === 'Aves' ? 'badge-aves' : 'badge-mammal'}`}>{sp.class}</span>
+                </td>
+                <td style="padding:0.75rem 0.5rem">
+                  {sp.pred_threatened === 1
+                    ? <span class="badge badge-pred">Amenazada</span>
+                    : <span style="font-size:0.72rem;color:var(--color-secondary)">No amenazada</span>
+                  }
+                </td>
+                <td style="padding:0.75rem 0.5rem">
+                  <ThreatGauge prob={sp.prob_threatened ?? 0} showLabel={false} />
+                  <span style="font-size:0.72rem;color:var(--color-secondary);margin-top:0.25rem;display:inline-block">
+                    {((sp.prob_threatened ?? 0) * 100).toFixed(1)}%
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {nativePredictions.map((sp, i) => (
-                <tr style={`border-bottom:1px solid var(--color-border);background:${sp.pred_threatened === 1 ? 'var(--color-threat-light)' : 'transparent'}`}>
-                  <td style="padding:0.75rem 1rem 0.75rem 0">
-                    <span style="font-style:italic;font-weight:500;color:var(--color-text)">{sp.species}</span>
-                    {spotlightNames.has(sp.species) && (
-                      <span style="margin-left:0.4rem;font-size:0.65rem;background:var(--color-accent-light);color:var(--color-accent);padding:1px 5px;border-radius:2px;font-weight:600">★ Destacada</span>
-                    )}
-                  </td>
-                  <td style="padding:0.75rem 0.5rem">
-                    <span class={`badge ${sp.class === 'Aves' ? 'badge-aves' : 'badge-mammal'}`}>{sp.class}</span>
-                  </td>
-                  <td style="padding:0.75rem 0.5rem">
-                    {sp.pred_threatened === 1
-                      ? <span class="badge badge-pred">Amenazada</span>
-                      : <span style="font-size:0.72rem;color:var(--color-secondary)">No amenazada</span>
-                    }
-                  </td>
-                  <td style="padding:0.75rem 0.5rem">
-                    <ThreatGauge prob={sp.prob_threatened ?? 0} showLabel={false} />
-                    <span style="font-size:0.72rem;color:var(--color-secondary);margin-top:0.25rem;display:inline-block">
-                      {((sp.prob_threatened ?? 0) * 100).toFixed(1)}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </section>
-  )}
+    </div>
+  </section>
+
+  <!-- Client-side version switching -->
+  <script>
+    const sel = document.getElementById('version-select') as HTMLSelectElement | null;
+    if (sel) {
+      sel.addEventListener('change', async () => {
+        const file = sel.value;
+        const res = await fetch(`/data/${file}`);
+        if (!res.ok) return;
+        const data: any[] = await res.json();
+
+        const native = data
+          .filter((p: any) => !p.is_exotic)
+          .sort((a: any, b: any) => (b.prob_threatened ?? 0) - (a.prob_threatened ?? 0));
+
+        const tbody = document.getElementById('species-tbody');
+        const desc = document.getElementById('tabla-desc');
+        if (desc) desc.textContent = `Todas las ${native.length} especies nativas, ordenadas por probabilidad de amenaza.`;
+        if (!tbody) return;
+
+        tbody.innerHTML = native.map((sp: any) => {
+          const prob = ((sp.prob_threatened ?? 0) * 100).toFixed(1);
+          const bg = sp.pred_threatened === 1 ? 'var(--color-threat-light)' : 'transparent';
+          const badge = sp.class === 'Aves'
+            ? '<span class="badge badge-aves">Aves</span>'
+            : '<span class="badge badge-mammal">Mammalia</span>';
+          const pred = sp.pred_threatened === 1
+            ? '<span class="badge badge-pred">Amenazada</span>'
+            : '<span style="font-size:0.72rem;color:var(--color-secondary)">No amenazada</span>';
+          const pct = sp.prob_threatened ?? 0;
+          const barW = Math.round(pct * 100);
+          const barColor = pct >= 0.6 ? 'var(--color-threat)' : pct >= 0.35 ? '#e67e22' : 'var(--color-secondary)';
+          return `<tr style="border-bottom:1px solid var(--color-border);background:${bg}">
+            <td style="padding:0.75rem 1rem 0.75rem 0"><span style="font-style:italic;font-weight:500;color:var(--color-text)">${sp.species}</span></td>
+            <td style="padding:0.75rem 0.5rem">${badge}</td>
+            <td style="padding:0.75rem 0.5rem">${pred}</td>
+            <td style="padding:0.75rem 0.5rem">
+              <div style="height:6px;background:var(--color-border);border-radius:3px;overflow:hidden;width:100%;max-width:160px">
+                <div style="height:100%;width:${barW}%;background:${barColor};border-radius:3px"></div>
+              </div>
+              <span style="font-size:0.72rem;color:var(--color-secondary);margin-top:0.25rem;display:inline-block">${prob}%</span>
+            </td>
+          </tr>`;
+        }).join('');
+      });
+    }
+  </script>
 
 </Base>

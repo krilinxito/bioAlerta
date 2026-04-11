@@ -1,12 +1,14 @@
 """
 BioAlerta — Preprocesamiento de datos para el sitio web
-Ejecutar: conda run -n bioalerta python bioalerta-web/scripts/prepare_data.py
+Ejecutar: conda run -n bioalerta python bioalerta-web/scripts/prepare_data.py [--version v2.0]
 """
+import argparse
 import os
 import json
 import shutil
 import pandas as pd
 import geopandas as gpd
+from datetime import date
 from pathlib import Path
 
 BASE = Path("/home/max1/ml/proy_sup")
@@ -14,8 +16,30 @@ DATA = BASE / "data"
 OUT  = BASE / "bioalerta-web/public/data"
 OUT.mkdir(parents=True, exist_ok=True)
 
-EXOTIC = {"Ovis aries", "Equus caballus", "Bos taurus", "Capra hircus",
-          "Bubalus bubalis", "Sus scrofa"}
+# Lista ampliada de especies domesticas/no-nativas
+# Nota: Lama guanicoe y Vicugna vicugna son silvestres y NO se incluyen.
+EXOTIC = {
+    "Ovis aries", "Equus caballus", "Bos taurus", "Capra hircus",
+    "Bubalus bubalis", "Sus scrofa", "Sus scrofa domesticus",
+    "Canis lupus familiaris", "Felis catus",
+    "Lama glama", "Vicugna pacos",
+    "Rattus norvegicus", "Mus musculus",
+    "Gallus gallus", "Columba livia",
+}
+
+# ─────────────────────────────────────────────────────────────────
+# Argumentos
+# ─────────────────────────────────────────────────────────────────
+parser = argparse.ArgumentParser(description="Genera JSONs para el sitio web de BioAlerta.")
+parser.add_argument("--version", default="v1.0", help="Etiqueta de version (ej: v2.0)")
+parser.add_argument("--description", default="", help="Descripcion de la version")
+args = parser.parse_args()
+
+VERSION = args.version
+VERSION_DATE = date.today().isoformat()
+VERSION_DESC = args.description or f"Pipeline ejecutado el {VERSION_DATE}"
+
+print(f"Version: {VERSION}")
 
 # ─────────────────────────────────────────────────────────────────
 # 1. Species predictions + coordinates
@@ -24,7 +48,7 @@ print("Procesando especies...")
 preds = pd.read_parquet(DATA / "processed/predicciones.parquet")
 feats = pd.read_parquet(DATA / "processed/species_features.parquet")
 
-# species name puede ser el índice
+# species name puede ser el indice
 if feats.index.name == "species" or "species" not in feats.columns:
     feats = feats.reset_index()
     if feats.columns[0] != "species":
@@ -44,8 +68,11 @@ merged = preds.merge(feats_slim, on="species", how="left")
 merged["prob_threatened"] = merged["prob_threatened"].round(4)
 merged["is_exotic"] = merged["species"].isin(EXOTIC)
 
-merged.to_json(OUT / "species.json", orient="records", force_ascii=False, indent=0)
-print(f"  species.json: {len(merged)} filas")
+# Guardar con nombre versionado y como species.json (compatibilidad)
+versioned_path = OUT / f"species_{VERSION}.json"
+merged.to_json(versioned_path, orient="records", force_ascii=False, indent=0)
+shutil.copy(versioned_path, OUT / "species.json")
+print(f"  species_{VERSION}.json: {len(merged)} filas")
 
 # All species para la capa base del mapa
 all_sp = feats_slim.copy()
@@ -61,19 +88,50 @@ for idx, row in all_sp.iterrows():
         all_sp.at[idx, "prob_threatened"] = round(pred_dict[sp]["prob_threatened"], 4)
         all_sp.at[idx, "pred_threatened"] = int(pred_dict[sp]["pred_threatened"])
 
-# Agregar class desde preds donde no esté
+# Agregar class desde preds donde no este
 if "class" not in all_sp.columns and "class" in preds.columns:
     class_dict = preds.set_index("species")["class"].to_dict()
     all_sp["class"] = all_sp["species"].map(class_dict)
 elif "class" in feats.columns:
     all_sp["class"] = feats["class"].values
 
-all_sp.to_json(OUT / "species_all.json", orient="records", force_ascii=False, indent=0)
-print(f"  species_all.json: {len(all_sp)} filas")
-
+versioned_all_path = OUT / f"species_all_{VERSION}.json"
+all_sp.to_json(versioned_all_path, orient="records", force_ascii=False, indent=0)
+shutil.copy(versioned_all_path, OUT / "species_all.json")
+print(f"  species_all_{VERSION}.json: {len(all_sp)} filas")
 
 # ─────────────────────────────────────────────────────────────────
-# 2. Shapefiles → GeoJSON simplificados
+# 2. Actualizar manifiesto de versiones
+# ─────────────────────────────────────────────────────────────────
+versions_path = OUT / "versions.json"
+if versions_path.exists():
+    with open(versions_path, encoding="utf-8") as f:
+        versions = json.load(f)
+else:
+    versions = []
+
+# Reemplazar entrada si ya existe, sino agregar
+existing = next((v for v in versions if v["version"] == VERSION), None)
+entry = {
+    "version": VERSION,
+    "date": VERSION_DATE,
+    "description": VERSION_DESC,
+    "file": f"species_{VERSION}.json",
+}
+if existing:
+    versions[versions.index(existing)] = entry
+else:
+    versions.append(entry)
+
+# Ordenar por version descendente
+versions.sort(key=lambda v: v["version"], reverse=True)
+
+with open(versions_path, "w", encoding="utf-8") as f:
+    json.dump(versions, f, ensure_ascii=False, indent=2)
+print(f"  versions.json actualizado ({len(versions)} versiones)")
+
+# ─────────────────────────────────────────────────────────────────
+# 3. Shapefiles → GeoJSON simplificados
 # ─────────────────────────────────────────────────────────────────
 def save_geojson(src_path, out_path, simplify_tol=None, keep_cols=None,
                  dissolve_by=None, skip_if_exists=False):
@@ -180,7 +238,7 @@ if mining_src.exists():
     print(f"  mining_bolivia.geojson copiado ({mining_src.stat().st_size//1024} KB)")
 
 # ─────────────────────────────────────────────────────────────────
-# 3. Reporte de tamaños
+# 4. Reporte de tamaños
 # ─────────────────────────────────────────────────────────────────
 print("\n─── Tamaños de archivos generados ───")
 for f in sorted(OUT.iterdir()):
