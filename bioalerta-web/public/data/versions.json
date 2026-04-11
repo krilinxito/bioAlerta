@@ -1,5 +1,11 @@
 [
   {
+    "version": "v2.0",
+    "date": "2026-04-11",
+    "description": "Query SPARQL mejorado + filtro especies domésticas",
+    "file": "species_v2.0.json"
+  },
+  {
     "version": "v1.0",
     "date": "2026-04-10",
     "description": "Pipeline inicial: GBIF Bolivia, Wikidata IUCN, RandomForest",
