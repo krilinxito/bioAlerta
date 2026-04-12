@@ -159,6 +159,7 @@ export default function MapIsland() {
   const [speciesFilter, setSpeciesFilter] = useState<'all' | 'threatened' | 'predicted'>('all');
   const speciesLayerRef = useRef<any>(null);
   const allSpeciesRef = useRef<Species[]>([]);
+  const versionCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
@@ -186,18 +187,42 @@ export default function MapIsland() {
 
       mapRef.current = map;
 
-      // Load species points
-      fetch('/data/species_all.json')
-        .then(r => r.json())
+      // Load species points (respect saved version if present)
+      const savedFile = localStorage.getItem('bioalerta_version_file');
+      const allFile = savedFile
+        ? savedFile.replace('species_', 'species_all_').replace(/^species_all_v/, 'species_all_v')
+        : '/data/species_all.json';
+      // Fallback: if versioned all-file doesn't exist, use default
+      const fetchAll = (file: string) =>
+        fetch(file).then(r => r.ok ? r.json() : fetch('/data/species_all.json').then(r => r.json()));
+
+      fetchAll(savedFile ? `/data/${allFile}` : '/data/species_all.json')
         .then((data: Species[]) => {
           allSpeciesRef.current = data;
-          renderSpeciesLayer(L, map, data, 'all');
+          renderSpeciesLayer(L, map, data, speciesFilter);
           setLoading(false);
         });
 
       // Load default-on layer (ANP nacional)
       loadGeoJSONLayer(L, map, LAYERS[0]);
+
+      // Listen for version changes from nav
+      const onVersionChange = (e: Event) => {
+        const { file } = (e as CustomEvent).detail as { file: string; version: string };
+        // Derive all-species filename: species_v2.0.json → species_all_v2.0.json
+        const allF = `/data/${file.replace(/^species_/, 'species_all_')}`;
+        fetch(allF)
+          .then(r => r.ok ? r.json() : fetch('/data/species_all.json').then(r => r.json()))
+          .then((data: Species[]) => {
+            allSpeciesRef.current = data;
+            renderSpeciesLayer(L, map, data, 'all');
+          });
+      };
+      window.addEventListener('bioalerta:version-change', onVersionChange);
+      versionCleanupRef.current = () => window.removeEventListener('bioalerta:version-change', onVersionChange);
     });
+
+    return () => { versionCleanupRef.current?.(); };
   }, []);
 
   function renderSpeciesLayer(L: any, map: any, data: Species[], filter: string) {

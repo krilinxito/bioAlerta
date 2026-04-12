@@ -1,4 +1,7 @@
 ---
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+
 interface Props {
   title?: string;
   description?: string;
@@ -10,6 +13,12 @@ const {
   fullHeight = false,
 } = Astro.props;
 const currentPath = Astro.url.pathname;
+
+let versions: { version: string; date: string; file: string; description: string }[] = [];
+try {
+  const p = resolve('public/data/versions.json');
+  if (existsSync(p)) versions = JSON.parse(readFileSync(p, 'utf-8'));
+} catch {}
 ---
 <!doctype html>
 <html lang="es">
@@ -79,6 +88,23 @@ const currentPath = Astro.url.pathname;
               `}
             >{label}</a>
           ))}
+
+          {versions.length > 1 && (
+            <div style="display:flex;align-items:center;gap:0.5rem;border-left:1px solid var(--color-border);padding-left:1.5rem">
+              <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-secondary)">Versión</span>
+              <select
+                id="global-version-select"
+                title="Cambiar versión del estudio"
+                style="font-size:0.78rem;padding:0.3rem 0.6rem;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text);cursor:pointer;font-family:inherit"
+              >
+                {versions.map(v => (
+                  <option value={v.file} data-version={v.version} title={v.description}>
+                    {v.version} — {v.date}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
     </nav>
@@ -117,5 +143,28 @@ const currentPath = Astro.url.pathname;
     )}
 
     <style is:global>@import "../styles/global.css";</style>
+
+    <script>
+      const VERSION_KEY = 'bioalerta_version_file';
+      const sel = document.getElementById('global-version-select') as HTMLSelectElement | null;
+      if (sel) {
+        // Restore saved selection
+        const saved = localStorage.getItem(VERSION_KEY);
+        if (saved) {
+          const opt = Array.from(sel.options).find(o => o.value === saved);
+          if (opt) sel.value = saved;
+        }
+
+        sel.addEventListener('change', () => {
+          const file = sel.value;
+          const version = sel.selectedOptions[0]?.dataset.version ?? '';
+          localStorage.setItem(VERSION_KEY, file);
+          // Notify all listeners on this page
+          window.dispatchEvent(new CustomEvent('bioalerta:version-change', {
+            detail: { file, version },
+          }));
+        });
+      }
+    </script>
   </body>
 </html>

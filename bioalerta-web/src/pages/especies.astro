@@ -58,31 +58,21 @@ const latestVersion = versions[0]?.version ?? 'v1.0';
     <div class="container">
       <div style="display:flex;gap:3rem;flex-wrap:wrap;align-items:flex-end">
         <div>
-          <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:var(--color-threat)">{threatened.length}</p>
+          <p id="stat-threatened" style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:var(--color-threat)">{threatened.length}</p>
           <p style="font-size:0.8rem;color:var(--color-secondary)">predichas amenazadas (nativas)</p>
         </div>
         <div>
-          <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#2471A3">{aves.length}</p>
+          <p id="stat-aves" style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#2471A3">{aves.length}</p>
           <p style="font-size:0.8rem;color:var(--color-secondary)">aves</p>
         </div>
         <div>
-          <p style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#784212">{mamiferos.length}</p>
+          <p id="stat-mamiferos" style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:#784212">{mamiferos.length}</p>
           <p style="font-size:0.8rem;color:var(--color-secondary)">mamíferos</p>
         </div>
-
-        <!-- Version selector -->
-        {versions.length > 1 && (
-          <div style="margin-left:auto">
-            <label for="version-select" style="font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-secondary);display:block;margin-bottom:0.35rem">Versión del estudio</label>
-            <select id="version-select" style="font-size:0.85rem;padding:0.4rem 0.75rem;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text);cursor:pointer">
-              {versions.map(v => (
-                <option value={v.file} selected={v.version === latestVersion} title={v.description}>
-                  {v.version} — {v.date}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div>
+          <p id="stat-total" style="font-size:2rem;font-weight:700;font-family:'Playfair Display',serif;color:var(--color-secondary)">{nativePredictions.length}</p>
+          <p style="font-size:0.8rem;color:var(--color-secondary)">sin IUCN evaluadas</p>
+        </div>
       </div>
     </div>
   </section>
@@ -156,48 +146,73 @@ const latestVersion = versions[0]?.version ?? 'v1.0';
 
   <!-- Client-side version switching -->
   <script>
-    const sel = document.getElementById('version-select') as HTMLSelectElement | null;
-    if (sel) {
-      sel.addEventListener('change', async () => {
-        const file = sel.value;
-        const res = await fetch(`/data/${file}`);
-        if (!res.ok) return;
-        const data: any[] = await res.json();
+    const VERSION_KEY = 'bioalerta_version_file';
 
-        const native = data
-          .filter((p: any) => !p.is_exotic)
-          .sort((a: any, b: any) => (b.prob_threatened ?? 0) - (a.prob_threatened ?? 0));
+    function renderRows(native: any[]) {
+      const tbody = document.getElementById('species-tbody');
+      const desc = document.getElementById('tabla-desc');
+      if (desc) desc.textContent = `Todas las ${native.length} especies nativas, ordenadas por probabilidad de amenaza.`;
+      if (!tbody) return;
 
-        const tbody = document.getElementById('species-tbody');
-        const desc = document.getElementById('tabla-desc');
-        if (desc) desc.textContent = `Todas las ${native.length} especies nativas, ordenadas por probabilidad de amenaza.`;
-        if (!tbody) return;
+      tbody.innerHTML = native.map((sp: any) => {
+        const prob = ((sp.prob_threatened ?? 0) * 100).toFixed(1);
+        const bg = sp.pred_threatened === 1 ? 'var(--color-threat-light)' : 'transparent';
+        const badge = sp.class === 'Aves'
+          ? '<span class="badge badge-aves">Aves</span>'
+          : '<span class="badge badge-mammal">Mammalia</span>';
+        const pred = sp.pred_threatened === 1
+          ? '<span class="badge badge-pred">Amenazada</span>'
+          : '<span style="font-size:0.72rem;color:var(--color-secondary)">No amenazada</span>';
+        const pct = sp.prob_threatened ?? 0;
+        const barW = Math.round(pct * 100);
+        const barColor = pct >= 0.6 ? 'var(--color-threat)' : pct >= 0.35 ? '#e67e22' : 'var(--color-secondary)';
+        return `<tr style="border-bottom:1px solid var(--color-border);background:${bg}">
+          <td style="padding:0.75rem 1rem 0.75rem 0"><span style="font-style:italic;font-weight:500;color:var(--color-text)">${sp.species}</span></td>
+          <td style="padding:0.75rem 0.5rem">${badge}</td>
+          <td style="padding:0.75rem 0.5rem">${pred}</td>
+          <td style="padding:0.75rem 0.5rem">
+            <div style="height:6px;background:var(--color-border);border-radius:3px;overflow:hidden;width:100%;max-width:160px">
+              <div style="height:100%;width:${barW}%;background:${barColor};border-radius:3px"></div>
+            </div>
+            <span style="font-size:0.72rem;color:var(--color-secondary);margin-top:0.25rem;display:inline-block">${prob}%</span>
+          </td>
+        </tr>`;
+      }).join('');
 
-        tbody.innerHTML = native.map((sp: any) => {
-          const prob = ((sp.prob_threatened ?? 0) * 100).toFixed(1);
-          const bg = sp.pred_threatened === 1 ? 'var(--color-threat-light)' : 'transparent';
-          const badge = sp.class === 'Aves'
-            ? '<span class="badge badge-aves">Aves</span>'
-            : '<span class="badge badge-mammal">Mammalia</span>';
-          const pred = sp.pred_threatened === 1
-            ? '<span class="badge badge-pred">Amenazada</span>'
-            : '<span style="font-size:0.72rem;color:var(--color-secondary)">No amenazada</span>';
-          const pct = sp.prob_threatened ?? 0;
-          const barW = Math.round(pct * 100);
-          const barColor = pct >= 0.6 ? 'var(--color-threat)' : pct >= 0.35 ? '#e67e22' : 'var(--color-secondary)';
-          return `<tr style="border-bottom:1px solid var(--color-border);background:${bg}">
-            <td style="padding:0.75rem 1rem 0.75rem 0"><span style="font-style:italic;font-weight:500;color:var(--color-text)">${sp.species}</span></td>
-            <td style="padding:0.75rem 0.5rem">${badge}</td>
-            <td style="padding:0.75rem 0.5rem">${pred}</td>
-            <td style="padding:0.75rem 0.5rem">
-              <div style="height:6px;background:var(--color-border);border-radius:3px;overflow:hidden;width:100%;max-width:160px">
-                <div style="height:100%;width:${barW}%;background:${barColor};border-radius:3px"></div>
-              </div>
-              <span style="font-size:0.72rem;color:var(--color-secondary);margin-top:0.25rem;display:inline-block">${prob}%</span>
-            </td>
-          </tr>`;
-        }).join('');
-      });
+      // Update stats
+      const threatened = native.filter((p: any) => p.pred_threatened === 1);
+      const avesT = threatened.filter((p: any) => p.class === 'Aves');
+      const mamT  = threatened.filter((p: any) => p.class === 'Mammalia');
+      const stT  = document.getElementById('stat-threatened');
+      const stA  = document.getElementById('stat-aves');
+      const stM  = document.getElementById('stat-mamiferos');
+      const stTot = document.getElementById('stat-total');
+      if (stT)   stT.textContent   = String(threatened.length);
+      if (stA)   stA.textContent   = String(avesT.length);
+      if (stM)   stM.textContent   = String(mamT.length);
+      if (stTot) stTot.textContent = String(native.length);
+    }
+
+    async function loadVersion(file: string) {
+      const res = await fetch(`/data/${file}`);
+      if (!res.ok) return;
+      const data: any[] = await res.json();
+      const native = data
+        .filter((p: any) => !p.is_exotic)
+        .sort((a: any, b: any) => (b.prob_threatened ?? 0) - (a.prob_threatened ?? 0));
+      renderRows(native);
+    }
+
+    // On version-change event from nav
+    window.addEventListener('bioalerta:version-change', (e: Event) => {
+      const { file } = (e as CustomEvent).detail;
+      loadVersion(file);
+    });
+
+    // On page load: check localStorage for saved version
+    const saved = localStorage.getItem(VERSION_KEY);
+    if (saved && saved !== 'species.json' && saved !== 'species_v2.0.json') {
+      loadVersion(saved);
     }
   </script>
 

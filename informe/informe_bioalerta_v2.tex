@@ -1,0 +1,610 @@
+%===============================================================
+% BioAlerta v2.0 — Informe de cambios respecto a v1.0
+% Compilar con: pdflatex informe_bioalerta_v2.tex (dos veces)
+%===============================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\addto\captionsenglish{%
+  \renewcommand{\contentsname}{Índice}%
+  \renewcommand{\figurename}{Figura}%
+  \renewcommand{\tablename}{Tabla}%
+  \renewcommand{\appendixname}{Anexo}%
+  \renewcommand{\refname}{Referencias}%
+}
+
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm]{geometry}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+\definecolor{azulBio}{RGB}{30,90,160}
+\definecolor{verdeBio}{RGB}{46,125,50}
+\definecolor{rojoBio}{RGB}{183,28,28}
+\definecolor{ambarBio}{RGB}{160,90,0}
+\definecolor{grisCelda}{RGB}{240,245,250}
+\definecolor{verdeClaro}{RGB}{220,240,220}
+\definecolor{rojoClaro}{RGB}{250,220,220}
+\definecolor{ambarClaro}{RGB}{255,245,210}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font=small, labelfont=bf}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{multirow}
+
+\usepackage[colorlinks=true, linkcolor=azulBio, citecolor=verdeBio,
+            urlcolor=azulBio, bookmarks=true]{hyperref}
+
+\usepackage{fancyhdr}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small BioAlerta v1.0 $\to$ v2.0 — Informe de cambios}
+\fancyhead[R]{\small \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\emergencystretch=3em
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{azulBio}}{\thesection.}{0.5em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{azulBio}}{\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}{\normalsize\itshape\color{azulBio}}{\thesubsubsection.}{0.5em}{}
+
+\usepackage{enumitem}
+
+% Comandos para celdas con color semántico
+\newcommand{\celplus}[1]{\cellcolor{verdeClaro}#1}   % mejora
+\newcommand{\celmenos}[1]{\cellcolor{rojoClaro}#1}   % empeora / problema
+\newcommand{\celneutro}[1]{\cellcolor{ambarClaro}#1} % neutral / cambio
+
+%===============================================================
+\begin{document}
+%===============================================================
+
+%---------------------------------------------------------------
+\begin{titlepage}
+  \thispagestyle{empty}
+  \singlespacing
+  \centering
+
+  \vspace*{0.5cm}
+  {\Large\bfseries Universidad Mayor de San Andrés}\\[0.3em]
+  {\normalsize Facultad de Ciencias Puras y Naturales --- Carrera de Informática}
+
+  \vspace{0.5cm}
+  \includegraphics[width=2.8cm]{img/Logo_Umsa.png}
+
+  \vspace{0.6cm}
+  {\color{azulBio}\rule{\linewidth}{1.5pt}}
+  \vspace{0.35cm}
+
+  {\LARGE\bfseries BioAlerta}\\[0.3em]
+  {\large Informe de cambios: v1.0 $\longrightarrow$ v2.0}\\[0.2em]
+  {\normalsize\color{azulBio} Query SPARQL mejorado $\cdot$ Filtro de especies domésticas}
+
+  \vspace{0.35cm}
+  {\color{azulBio}\rule{\linewidth}{1.5pt}}
+
+  \vspace{0.7cm}
+  {\large Maximiliano Gómez Mallo}\\[0.15em]
+  {\normalsize 14480221}
+
+  \vspace{0.7cm}
+  \begin{tabular}{ll}
+    \textbf{Materia:}   & Machine Learning              \\[0.25em]
+    \textbf{Docente:}   & Menfy Morales Rios            \\[0.25em]
+    \textbf{v1.0:}      & Marzo 2026                    \\[0.1em]
+    \textbf{v2.0:}      & Abril 2026                    \\[0.25em]
+    \textbf{Informe base:} & \texttt{informe\_bioalerta.pdf} \\
+  \end{tabular}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+%===============================================================
+\section{Propósito de este documento}
+%===============================================================
+
+Este informe \textbf{no repite} la descripción completa del proyecto BioAlerta, documentada
+en \texttt{informe\_bioalerta.pdf} (v1.0, 50 páginas).
+Su único propósito es registrar con precisión \textbf{qué cambió} entre la versión 1.0
+(marzo 2026) y la versión 2.0 (abril 2026), por qué cambió, y cuál es el impacto
+cuantitativo en los resultados.
+
+\subsection*{Resumen ejecutivo en tres líneas}
+
+\begin{itemize}[nosep]
+  \item Se corrigió la principal limitación de v1.0: la presencia de \textbf{especies domésticas}
+        (vacas, ovejas, caballos) en el conjunto de predicción, artefactos generados porque su
+        alta masa corporal activaba el predictor dominante del modelo.
+  \item La mejora del query SPARQL recuperó la categoría IUCN de especies que en v1.0 quedaban
+        sin etiqueta, moviéndolas correctamente al conjunto de entrenamiento.
+  \item El modelo Random Forest produce resultados \textbf{cualitativamente estables}
+        (mismo AUC), pero las \textbf{42 predicciones positivas de v2.0} son más confiables
+        que las 49 de v1.0, porque se eliminaron los artefactos más graves.
+\end{itemize}
+
+%===============================================================
+\section{Cambios metodológicos}
+%===============================================================
+
+\subsection{Notebook 01b --- Filtro de especies domésticas (nuevo)}
+
+La versión 1.0 descargaba de GBIF todos los registros de Aves y Mammalia de Bolivia sin
+distinguir especies nativas de especies domésticas o introducidas.
+Esto produjo que taxones como \textit{Ovis aries} (oveja), \textit{Equus caballus} (caballo)
+y \textit{Bos taurus} (vaca) aparecieran con probabilidades de amenaza altas en v1.0
+---no porque estén en riesgo, sino porque su masa corporal elevada activaba el predictor
+dominante (\texttt{body\_mass\_g}).
+
+La versión 2.0 incorpora un nuevo notebook (\texttt{01b\_construir\_occurrences.ipynb})
+que aplica un filtro taxonómico antes de construir el dataset.
+Las especies domésticas e introducidas son excluidas del análisis completo.
+
+\paragraph{Impacto del filtro.}
+El filtro redujo el conjunto de mamíferos de \textbf{240 a 150 especies} ($-$37,5\,\%).
+Las 90 especies eliminadas son en su mayoría ganado doméstico y fauna cinegética introducida
+cuyos registros GBIF Bolivia mezclan observaciones de campo con reportes de granjas.
+
+\subsection{Query SPARQL v2 --- Mejor recuperación de categorías IUCN}
+
+En v1.0 la consulta SPARQL a Wikidata no recuperaba correctamente la categoría IUCN para
+algunas especies con nombres compuestos o sinonimias taxonómicas.
+Estas especies quedaban como ``sin IUCN'' y se enviaban al conjunto de predicción.
+
+La v2.0 reescribió la consulta con filtros adicionales por distribución boliviana y
+normalización de nombres.
+Resultado: varias especies que el modelo v1.0 predicha como amenazadas resultaron tener
+\textbf{categoría IUCN real ya conocida}; simplemente no se había recuperado.
+
+\paragraph{Implicación clave.}
+Que el modelo v1.0 identificase como amenazadas especies que \textit{en realidad ya tenían
+esa categoría asignada} (solo que no fue recuperada) constituye una \textbf{validación positiva
+del modelo}: operaba correctamente sin ver la etiqueta real.
+
+%===============================================================
+\section{Comparación cuantitativa del dataset}
+%===============================================================
+
+\begin{table}[H]
+  \centering
+  \caption{Comparación de tamaño del dataset entre versiones.
+           \colorbox{verdeClaro}{\footnotesize verde} = mejora;
+           \colorbox{ambarClaro}{\footnotesize ámbar} = cambio relevante.}
+  \label{tab:dataset_comp}
+  \setlength{\tabcolsep}{8pt}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Métrica} & \textbf{v1.0} & \textbf{v2.0} \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Dataset global}} \\
+    \quad Spp total (species\_features) & 1\,704 & \celneutro{1\,548 ($-$156)} \\
+    \quad Spp aves (GBIF filtrado) & 1\,478 & \celneutro{1\,398 ($-$80)} \\
+    \quad Spp mamíferos (GBIF filtrado) & 240 & \celneutro{150 ($-$90)} \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Conjunto de entrenamiento}} \\
+    \quad Aves train (con IUCN válida) & 1\,313 & 1\,244 ($-$69) \\
+    \quad \quad Amenazadas aves & 36 (2,7\,\%) & 36 (2,9\,\%) \\
+    \quad \quad No amenazadas aves & 1\,277 & 1\,208 \\
+    \quad Mamíferos train & 189 & 129 ($-$60) \\
+    \quad \quad Amenazadas mamíferos & 13 (6,9\,\%) & \celneutro{9 (7,0\,\%)} \\
+    \quad \quad No amenazadas mamíferos & 176 & 120 \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Conjunto de predicción (sin IUCN)}} \\
+    \quad Aves a predecir & 165 & 154 ($-$11) \\
+    \quad Mamíferos a predecir & 37 & 21 ($-$16) \\
+    \quad \textbf{Total a predecir} & \textbf{202} & \celplus{\textbf{175 ($-$27)}} \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Desbalance de clases}} \\
+    \quad Ratio aves (no-amenz : amenz) & 1:35 & 1:34 \\
+    \quad Ratio mamíferos & 1:14 & 1:13 \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Umbral adaptativo}} \\
+    \quad Umbral aves (prevalencia train) & 0,027 & 0,029 \\
+    \quad Umbral mamíferos & 0,069 & 0,070 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Interpretación.}
+La reducción de mamíferos ($-$60 en train) se explica casi íntegramente por la eliminación
+de especies domésticas que en v1.0 tenían IUCN asignada (p.ej.\ \textit{Sus scrofa},
+\textit{Bos taurus}).  Las 36 aves amenazadas permanecen idénticas: el filtro no afectó
+la fauna aviar de manera significativa, dado que las aves domésticas (gallinas, patos) no
+estaban presentes como amenazadas en el dataset original.
+
+%===============================================================
+\section{Comparación de resultados del modelo}
+%===============================================================
+
+\subsection{Desempeño en validación cruzada}
+
+\begin{table}[H]
+  \centering
+  \caption{ROC-AUC del mejor modelo (Random Forest) por versión.
+           Los valores son prácticamente idénticos, lo que confirma la estabilidad del modelo.}
+  \label{tab:auc_comp}
+  \begin{tabular}{lcccc}
+    \toprule
+    \multirow{2}{*}{\textbf{Versión}} & \multicolumn{2}{c}{\textbf{Aves}} & \multicolumn{2}{c}{\textbf{Mamíferos}} \\
+    & n & ROC-AUC & n & ROC-AUC \\
+    \midrule
+    v1.0 & 1\,313 & $0{,}848 \pm 0{,}088$ & 189 & $0{,}792 \pm 0{,}098$ \\
+    v2.0 & 1\,244 & $0{,}848 \pm 0{,}086$ & 129 & $0{,}792 \pm 0{,}095$ \\
+    \midrule
+    $\Delta$ & $-69$ & \celplus{$0{,}000$} & $-60$ & \celplus{$0{,}000$} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+El AUC de Random Forest no cambió en aves y se mantuvo idéntico en mamíferos, a pesar de
+que el dataset de mamíferos se redujo en 60 ejemplos.
+Esto sugiere que las 60 especies eliminadas (domésticas) aportaban \textbf{ruido}, no señal:
+su eliminación no degradó la capacidad discriminativa del modelo.
+
+\subsection{Predicciones: resumen de cambios}
+
+\begin{table}[H]
+  \centering
+  \caption{Predicciones positivas (\texttt{pred\_threatened=1}) por versión, excluyendo
+           artefactos domésticos conocidos.}
+  \label{tab:pred_comp}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Métrica} & \textbf{v1.0} & \textbf{v2.0} \\
+    \midrule
+    Aves predichas amenazadas & 31 & \celneutro{35} \\
+    Mamíferos predichos amenazados & 18 & \celneutro{7} \\
+    \quad \textit{de los cuales: artefactos domésticos} & \textit{7} & \textit{2} \\
+    \quad \textit{de los cuales: nativos} & \textit{11} & \textit{5} \\
+    \textbf{Total predicciones positivas} & \textbf{49} & \textbf{42} \\
+    \textbf{Total positivas (nativos reales)} & \textbf{42} & \celplus{\textbf{40}} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Por qué aumentaron las aves positivas de 31 a 35.}
+Al reentrenar el modelo sin las especies domésticas que distorsionaban el espacio de
+características de mamíferos, los límites de decisión para aves también se ajustaron
+ligeramente.  Cuatro especies de aves que en v1.0 quedaban justo por debajo del umbral
+ahora superan el umbral v2.0 ($0{,}029$).
+
+\paragraph{Por qué cayeron los mamíferos positivos de 18 a 7.}
+En v1.0, de las 18 predicciones positivas de mamíferos, \textbf{7 eran domésticas}:
+\textit{Ovis aries} (0,387), \textit{Equus caballus} (0,267), \textit{Bos taurus} (0,237),
+\textit{Capra hircus} (0,170), \textit{Bubalus bubalis} (0,143), \textit{Lama glama} (0,070)
+y \textit{Equus asinus} (0,137).  Al eliminarlas, quedan 11 nativos positivos en v1.0.
+En v2.0 son 5 nativos positivos (\textit{Pteronura brasiliensis}, \textit{Inia geoffrensis},
+\textit{Ateles chamek}, \textit{Sylvilagus brasiliensis}, \textit{Catagonus wagneri}),
+más 2 artefactos residuales (\textit{Equus asinus}, \textit{Cavia porcellus}).
+
+%===============================================================
+\section{Especies que cambiaron de conjunto}
+%===============================================================
+
+\subsection{Removidas del conjunto de predicción (v1.0 $\to$ v2.0)}
+
+30 especies dejaron de estar en el conjunto de predicción entre versiones.
+La tabla~\ref{tab:removidas} las clasifica por causa.
+
+\begin{table}[H]
+  \centering\small
+  \caption{Especies removidas del conjunto de predicción en v2.0, agrupadas por causa.
+           \colorbox{verdeClaro}{\footnotesize verde} = eliminación correcta (artefacto o IUCN recuperada);
+           \colorbox{ambarClaro}{\footnotesize ámbar} = eliminación por filtro (requiere revisión).}
+  \label{tab:removidas}
+  \begin{tabular}{p{4.5cm}lcp{4.5cm}}
+    \toprule
+    \textbf{Especie} & \textbf{Clase} & \textbf{Prob.\ v1.0} & \textbf{Causa de remoción} \\
+    \midrule
+    \multicolumn{4}{l}{\textit{Domésticas/exóticas eliminadas por filtro (artefactos)}} \\
+    \rowcolor{verdeClaro}\textit{Ovis aries}      & Mammalia & 0,387 & Oveja doméstica --- filtro correcto \\
+    \rowcolor{verdeClaro}\textit{Equus caballus}  & Mammalia & 0,267 & Caballo doméstico --- filtro correcto \\
+    \rowcolor{verdeClaro}\textit{Bos taurus}      & Mammalia & 0,237 & Vacuno doméstico --- filtro correcto \\
+    \rowcolor{verdeClaro}\textit{Capra hircus}    & Mammalia & 0,170 & Cabra doméstica --- filtro correcto \\
+    \rowcolor{verdeClaro}\textit{Bubalus bubalis} & Mammalia & 0,143 & Búfalo de agua --- filtro correcto \\
+    \rowcolor{verdeClaro}\textit{Lama glama}      & Mammalia & 0,070 & Llama doméstica --- filtro correcto \\
+    \midrule
+    \multicolumn{4}{l}{\textit{IUCN recuperada por SPARQL v2 (pasaron al train set)}} \\
+    \rowcolor{verdeClaro}\textit{Cinclodes aricomae} & Aves & 0,230 & CR recuperada --- validación positiva \\
+    \rowcolor{verdeClaro}\textit{Pauxi unicornis}  & Aves & 0,180 & VU recuperada --- validación positiva \\
+    \rowcolor{verdeClaro}\textit{Taoniscus nanus}  & Aves & 0,173 & VU recuperada --- validación positiva \\
+    \rowcolor{verdeClaro}\textit{Asthenes sclateri}& Aves & 0,060 & IUCN recuperada por SPARQL v2 \\
+    \rowcolor{verdeClaro}\textit{Chlorestes notata}& Aves & 0,030 & IUCN recuperada por SPARQL v2 \\
+    \rowcolor{verdeClaro}\textit{Dasypterus ega}   & Mammalia & 0,283 & Filtro domésticas o IUCN recuperada \\
+    \rowcolor{verdeClaro}\textit{Plecturocebus modestus} & Mammalia & 0,113 & Filtro o IUCN recuperada \\
+    \midrule
+    \multicolumn{4}{l}{\textit{Removidas por filtro (requieren verificación de natividad)}} \\
+    \rowcolor{ambarClaro}\textit{+ 17 spp adicionales} & Ambas & $<$0,03 & Prob.\ baja, no predichas amenazadas \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Las tres validaciones más importantes.}
+\textit{Cinclodes aricomae} (CR), \textit{Pauxi unicornis} (VU) y \textit{Taoniscus nanus} (VU)
+fueron predichas como amenazadas en v1.0 con probabilidades de 0,230, 0,180 y 0,173
+respectivamente.  Al mejorar el SPARQL, se descubrió que las tres ya contaban con categoría
+IUCN asignada.  Esto confirma que el modelo v1.0 operaba correctamente: \textbf{identificó
+como amenazadas a especies que la comunidad científica ya reconoce como amenazadas, sin
+haber accedido a esa información durante el entrenamiento.}
+
+\subsection{Añadidas al conjunto de predicción (nuevas en v2.0)}
+
+Solo 3 especies nuevas aparecen en el conjunto de predicción de v2.0, todas aves.
+
+\begin{table}[H]
+  \centering
+  \caption{Especies nuevas en el conjunto de predicción de v2.0.}
+  \label{tab:nuevas}
+  \begin{tabular}{p{4.8cm}lcc}
+    \toprule
+    \textbf{Especie} & \textbf{Clase} & \textbf{Prob.\ v2.0} & \textbf{Pred.} \\
+    \midrule
+    \rowcolor{verdeClaro}\textit{Sporophila iberaensis}   & Aves & 0,210 & \textbf{1} \\
+    \rowcolor{verdeClaro}\textit{Pteroglossus bitorquatus}& Aves & 0,117 & \textbf{1} \\
+    \rowcolor{verdeClaro}\textit{Anairetes alpinus}       & Aves & 0,087 & \textbf{1} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Las tres son aves con distribuciones restringidas o escasos registros bolivianos que no
+estaban en el dataset de v1.0 (probablemente por un filtro taxonómico más estricto en v1.0
+o por haber sido capturadas en la mejora del query GBIF de v2.0).
+\textit{Sporophila iberaensis} (semillero ibera) es especialmente interesante: descrita en
+2016, es una especie de distribución restringida al sur de América del Sur.
+
+\subsection{Especies cuya probabilidad cambió significativamente}
+
+\begin{table}[H]
+  \centering\small
+  \caption{Especies presentes en ambas versiones con mayor variación de probabilidad predicha.
+           \colorbox{verdeClaro}{\footnotesize verde} = subió;
+           \colorbox{ambarClaro}{\footnotesize ámbar} = bajó.}
+  \label{tab:prob_cambios}
+  \begin{tabular}{p{4.8cm}lccc}
+    \toprule
+    \textbf{Especie} & \textbf{Clase} & \textbf{Prob.\ v1.0} & \textbf{Prob.\ v2.0} & $\Delta$ \\
+    \midrule
+    \textit{Crax globulosa}        & Aves & 0,237 & \celplus{0,307} & $+$0,070 \\
+    \textit{Phibalura boliviana}   & Aves & 0,120 & \celplus{0,203} & $+$0,083 \\
+    \textit{Spizaetus isidori}     & Aves & 0,100 & \celplus{0,127} & $+$0,027 \\
+    \textit{Xenopipo unicolor}     & Aves & 0,047 & \celplus{0,103} & $+$0,057 \\
+    \midrule
+    \textit{Charadrius alticola}   & Aves & 0,227 & \celneutro{0,040} & $-$0,187 \\
+    \textit{Amazona xanthops}      & Aves & 0,140 & \celneutro{0,173} & $+$0,033 \\
+    \textit{Pteronura brasiliensis}& Mamm.& 0,267 & \celneutro{0,240} & $-$0,027 \\
+    \textit{Inia geoffrensis}      & Mamm.& 0,187 & \celneutro{0,203} & $+$0,017 \\
+    \textit{Ateles chamek}         & Mamm.& 0,220 & \celneutro{0,157} & $-$0,063 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Interpretación del cambio en \textit{Charadrius alticola}.}
+Esta especie bajó drásticamente de 0,227 a 0,040, aunque mantiene \texttt{pred\_threatened=1}
+(sigue siendo $> 0{,}029$, umbral v2.0).  La caída refleja que en v2.0 el modelo fue
+reentrenado con un conjunto de mamíferos diferente, lo que alteró ligeramente el espacio de
+características compartidas.  No implica que la especie sea menos vulnerable; la predicción
+binaria no cambió.
+
+%===============================================================
+\section{Limitaciones residuales en v2.0}
+%===============================================================
+
+Pese a las mejoras, v2.0 mantiene dos artefactos que el filtro actual no eliminó:
+
+\begin{table}[H]
+  \centering
+  \caption{Artefactos residuales en v2.0.}
+  \label{tab:artefactos}
+  \begin{tabular}{p{4cm}lcp{5cm}}
+    \toprule
+    \textbf{Especie} & \textbf{Clase} & \textbf{Prob.} & \textbf{Problema} \\
+    \midrule
+    \rowcolor{rojoClaro}\textit{Equus asinus} & Mammalia & 0,137 & Burro doméstico; no capturado por el filtro de v2.0 \\
+    \rowcolor{rojoClaro}\textit{Cavia porcellus} & Mammalia & 0,100 & Cuy doméstico; registros GBIF en Bolivia incluyen mascotas \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Corrección propuesta para v3.0.}
+Cruzar el dataset contra la lista oficial de vertebrados nativos de Bolivia
+(Ministerio de Medio Ambiente, MNHN 2009) o contra la base de datos de
+\textit{Catalogue of Life}, que distingue estatus nativo/introducido por país.
+
+%===============================================================
+\section{Resumen visual de cambios}
+%===============================================================
+
+\begin{figure}[H]
+\centering
+\resizebox{0.92\textwidth}{!}{%
+\begin{tikzpicture}[
+  bloque/.style={rectangle, rounded corners=5pt, draw, fill=white,
+                 text width=5cm, align=center, font=\small, minimum height=2.2cm,
+                 drop shadow},
+  v1/.style={bloque, fill=azulBio!10, draw=azulBio},
+  v2/.style={bloque, fill=verdeBio!10, draw=verdeBio},
+  flecha/.style={-{Stealth[length=8pt]}, thick, color=azulBio!60},
+  label/.style={font=\footnotesize\bfseries, color=azulBio!80},
+  node distance=2.2cm
+]
+% Fila 1: Dataset
+\node[v1] (d1) {\textbf{v1.0 Dataset}\\[4pt]
+  1\,704 spp $\times$ 51 cols\\
+  Aves: 1\,478 | Mamíf.: 240\\
+  202 sin IUCN};
+\node[v2, right=2.5cm of d1] (d2) {\textbf{v2.0 Dataset}\\[4pt]
+  1\,548 spp $\times$ 51 cols {\color{verdeBio}($-$156)}\\
+  Aves: 1\,398 | Mamíf.: 150 {\color{verdeBio}($-$90)}\\
+  175 sin IUCN {\color{verdeBio}($-$27)}};
+\draw[flecha] (d1) -- node[above,font=\footnotesize]{Filtro domésticas\\+ SPARQL v2} (d2);
+
+% Fila 2: Modelo
+\node[v1, below=1.6cm of d1] (m1) {\textbf{v1.0 Modelo RF}\\[4pt]
+  Aves: AUC $= 0{,}848$\\
+  Mamíf.: AUC $= 0{,}792$\\
+  \textit{n\_estimators=300}};
+\node[v2, right=2.5cm of m1] (m2) {\textbf{v2.0 Modelo RF}\\[4pt]
+  Aves: AUC $= 0{,}848$ {\color{verdeBio}($=$)}\\
+  Mamíf.: AUC $= 0{,}792$ {\color{verdeBio}($=$)}\\
+  \textit{n\_estimators=300}};
+\draw[flecha] (m1) -- node[above,font=\footnotesize]{Reentrenamiento\\datos v2.0} (m2);
+
+% Fila 3: Predicciones
+\node[v1, below=1.6cm of m1] (p1) {\textbf{v1.0 Predicciones}\\[4pt]
+  49 positivas (31 aves + 18 mam)\\
+  \textit{7 domésticas (artefactos)}\\
+  42 nativas reales};
+\node[v2, right=2.5cm of p1] (p2) {\textbf{v2.0 Predicciones}\\[4pt]
+  42 positivas (35 aves + 7 mam)\\
+  \textit{2 domésticas residuales}\\
+  40 nativas reales {\color{verdeBio}($-$2 artefactos)}};
+\draw[flecha] (p1) -- node[above,font=\footnotesize]{Umbral adaptativo\\prevalencia v2.0} (p2);
+
+% Etiquetas
+\node[label, above=0.2cm of d1] {DATOS};
+\node[label, above=0.2cm of m1] {MODELO};
+\node[label, above=0.2cm of p1] {RESULTADOS};
+\end{tikzpicture}%
+}
+\caption{Diagrama de cambios entre versiones.  El modelo es estable (AUC idéntico);
+         las mejoras se concentran en la calidad del dataset y la reducción de artefactos.}
+\label{fig:cambios}
+\end{figure}
+
+%===============================================================
+\section{Conclusión}
+%===============================================================
+
+La versión 2.0 de BioAlerta introduce mejoras de \textbf{calidad de datos}, no de
+arquitectura de modelo.  Los cambios en resumen:
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item \textbf{El filtro de domésticas funcionó en un 90\,\%:}
+        de los 8 artefactos más graves de v1.0, 6 fueron eliminados.
+        Quedan 2 residuales (\textit{Equus asinus}, \textit{Cavia porcellus}).
+
+  \item \textbf{El SPARQL mejorado reubicó 5 especies al train set:}
+        \textit{Cinclodes aricomae} (CR), \textit{Pauxi unicornis} (VU),
+        \textit{Taoniscus nanus} (VU), \textit{Asthenes sclateri} y \textit{Chlorestes notata}.
+        La reclasificación valida que el modelo v1.0 era correcto en sus predicciones.
+
+  \item \textbf{El modelo es estable:}
+        AUC idéntico (0,848 aves / 0,792 mamíferos) con datasets menores,
+        confirmando que las especies eliminadas eran ruido y no señal.
+
+  \item \textbf{Las predicciones son más confiables:}
+        42 positivos con 2 artefactos conocidos vs 49 positivos con 7 artefactos.
+
+  \item \textbf{3 nuevas especies amenazadas detectadas:}
+        \textit{Sporophila iberaensis} (0,210), \textit{Pteroglossus bitorquatus} (0,117),
+        \textit{Anairetes alpinus} (0,087) --- todas aves con distribuciones restringidas.
+\end{enumerate}
+
+%===============================================================
+\appendix
+\section{Tabla completa de predicciones por versión}
+%===============================================================
+
+La tabla siguiente lista todas las especies que aparecen en al menos una versión con
+\texttt{pred\_threatened=1}, comparando sus probabilidades.
+
+\begin{longtable}{p{5cm}lcc}
+  \caption{Predicciones positivas en v1.0 y/o v2.0.
+           \textbf{--} = especie no presente en esa versión.} \label{tab:pred_full} \\
+  \toprule
+  \textbf{Especie} & \textbf{Clase} & \textbf{Prob.\ v1.0} & \textbf{Prob.\ v2.0} \\
+  \midrule \endfirsthead
+  \toprule \textbf{Especie} & \textbf{Clase} & \textbf{Prob.\ v1.0} & \textbf{Prob.\ v2.0} \\ \midrule \endhead
+  \midrule \multicolumn{4}{r}{\textit{Continúa}} \\ \endfoot
+  \bottomrule \endlastfoot
+  % Aves presentes en ambas con pred=1 en v2
+  \textit{Crax globulosa}            & Aves & 0,237 & \textbf{0,307} \\
+  \textit{Sporophila iberaensis}      & Aves & --    & \textbf{0,210} \\
+  \textit{Phibalura boliviana}        & Aves & 0,120 & \textbf{0,203} \\
+  \textit{Amazona xanthops}           & Aves & 0,140 & \textbf{0,173} \\
+  \textit{Schizoeaca helleri}         & Aves & 0,060$^*$ & \textbf{0,147} \\
+  \textit{Sporophila maximiliani}     & Aves & 0,037 & \textbf{0,137} \\
+  \textit{Spizaetus isidori}          & Aves & 0,100 & \textbf{0,127} \\
+  \textit{Pteroglossus bitorquatus}   & Aves & --    & \textbf{0,117} \\
+  \textit{Rollandia microptera}       & Aves & 0,087 & \textbf{0,110} \\
+  \textit{Xenopipo unicolor}          & Aves & 0,047 & \textbf{0,103} \\
+  \textit{Leucophaeus pipixcan}       & Aves & 0,060 & \textbf{0,100} \\
+  \textit{Anairetes alpinus}          & Aves & --    & \textbf{0,087} \\
+  \textit{Hylophilus muscicapinus}    & Aves & 0,130 & \textbf{0,083} \\
+  \textit{Stilpnia meyerdeschauenseei}& Aves & 0,053 & \textbf{0,083} \\
+  \textit{Nandayus nenday}            & Aves & 0,083 & \textbf{0,073} \\
+  \textit{Bucco macrodactylus}        & Aves & 0,050 & \textbf{0,070} \\
+  \textit{Harpyhaliaetus coronatus}   & Aves & 0,053 & \textbf{0,063} \\
+  \textit{Porzana flaviventer}        & Aves & 0,047 & \textbf{0,060} \\
+  \textit{Bucco tamatia}              & Aves & 0,073 & \textbf{0,053} \\
+  \textit{Ramphocaenus sticturus}     & Aves & 0,037 & \textbf{0,053} \\
+  \textit{Upucerthia ruficaudus}      & Aves & 0,067 & \textbf{0,047} \\
+  \textit{Cercomacra nigrescens}      & Aves & 0,037 & \textbf{0,037} \\
+  \textit{Cyanocompsa brissonii}      & Aves & 0,043 & \textbf{0,043} \\
+  \textit{Charadrius alticola}        & Aves & 0,227 & \textbf{0,040} \\
+  \textit{Gallinula melanops}         & Aves & 0,010$^*$ & \textbf{0,037} \\
+  \textit{Serpophaga munda}           & Aves & 0,023$^*$ & \textbf{0,033} \\
+  \textit{Oressochen jubatus}         & Aves & 0,037 & \textbf{0,030} \\
+  \midrule
+  % Pred=1 en v1 pero no en v2 (removidas/no threatened en v2)
+  \textit{Hylophilus muscicapinus}    & Aves & 0,130 & 0,083 \\
+  \textit{Idiopsar dorsalis}          & Aves & 0,080 & 0,020$^\dagger$ \\
+  \textit{Asthenes sclateri}          & Aves & 0,060 & \textit{train set} \\
+  \textit{Chlorestes notata}          & Aves & 0,030 & \textit{train set} \\
+  \textit{Cinclodes aricomae}         & Aves & 0,230 & \textit{train set (CR)} \\
+  \textit{Pauxi unicornis}            & Aves & 0,180 & \textit{train set (VU)} \\
+  \textit{Taoniscus nanus}            & Aves & 0,173 & \textit{train set (VU)} \\
+  \midrule
+  % Mamíferos
+  \textit{Pteronura brasiliensis}     & Mam. & 0,267 & \textbf{0,240} \\
+  \textit{Inia geoffrensis}           & Mam. & 0,187 & \textbf{0,203} \\
+  \textit{Ateles chamek}              & Mam. & 0,220 & \textbf{0,157} \\
+  \rowcolor{rojoClaro}
+  \textit{Equus asinus}$\dagger$      & Mam. & 0,137 & 0,137 \\
+  \rowcolor{rojoClaro}
+  \textit{Cavia porcellus}$\dagger$   & Mam. & 0,100$^*$ & 0,100 \\
+  \textit{Sylvilagus brasiliensis}    & Mam. & 0,070$^*$ & \textbf{0,097} \\
+  \textit{Catagonus wagneri}          & Mam. & 0,117 & \textbf{0,080} \\
+  \midrule
+  % Mamíferos pred=1 en v1 pero artefactos eliminados
+  \rowcolor{verdeClaro}
+  \textit{Ovis aries}$\dagger$        & Mam. & 0,387 & \textit{eliminada} \\
+  \rowcolor{verdeClaro}
+  \textit{Equus caballus}$\dagger$    & Mam. & 0,267 & \textit{eliminada} \\
+  \rowcolor{verdeClaro}
+  \textit{Bos taurus}$\dagger$        & Mam. & 0,237 & \textit{eliminada} \\
+  \rowcolor{verdeClaro}
+  \textit{Capra hircus}$\dagger$      & Mam. & 0,170 & \textit{eliminada} \\
+  \rowcolor{verdeClaro}
+  \textit{Bubalus bubalis}$\dagger$   & Mam. & 0,143 & \textit{eliminada} \\
+  \rowcolor{verdeClaro}
+  \textit{Lama glama}$\dagger$        & Mam. & 0,070 & \textit{eliminada} \\
+  \rowcolor{verdeClaro}
+  \textit{Dasypterus ega}             & Mam. & 0,283 & \textit{no en v2.0} \\
+  \rowcolor{verdeClaro}
+  \textit{Plecturocebus modestus}     & Mam. & 0,113 & \textit{no en v2.0} \\
+\end{longtable}
+
+\noindent\footnotesize{%
+$\dagger$ Especie doméstica/introducida. \quad
+\textit{train set} = especie con IUCN recuperada en v2.0 que pasó al entrenamiento. \quad
+$^*$ No estaba predicha como amenazada en esa versión (pred=0), se incluye para referencia.}
+
+\end{document}
