@@ -719,4 +719,160 @@ Dos razones:
 
 ---
 
+## 13. Explicación de Métricas para Presentación
+
+### 13.1 Base: Matriz de Confusión
+
+Todo parte de 4 conteos. Dado un umbral de decisión, cada predicción cae en una celda:
+
+```
+                    PREDICHO
+                  +               -
+         ┌─────────────────┬─────────────────┐
+    +    │  TP              │  FN              │  ← amenazadas reales
+REAL     │  (acierto +)     │  (se escapó)     │
+         ├─────────────────┼─────────────────┤
+    -    │  FP              │  TN              │  ← no amenazadas reales
+         │  (falsa alarma)  │  (acierto -)     │
+         └─────────────────┴─────────────────┘
+```
+
+- **TP**: amenazada real, modelo dijo amenazada ✓
+- **FN**: amenazada real, modelo dijo no amenazada ✗ — el peor error
+- **FP**: no amenazada, modelo dijo amenazada ✗ — falsa alarma
+- **TN**: no amenazada, modelo dijo no amenazada ✓
+
+---
+
+### 13.2 Precisión y Recall
+
+```
+              TP                          TP
+Precisión = ──────          Recall = ──────────
+            TP + FP                  TP + FN
+```
+
+- **Precisión**: de todo lo que el modelo marcó como amenazada, ¿cuántas realmente lo eran? → mide falsas alarmas
+- **Recall**: de todas las amenazadas reales, ¿cuántas detectó? → mide cuántas se escaparon
+
+Hay un **trade-off permanente**: bajar el umbral de decisión sube el recall pero baja la precisión.
+
+---
+
+### 13.3 ROC-AUC
+
+Para cada umbral posible (0.01, 0.02, ..., 0.99) se calcula:
+
+```
+TPR (= Recall)     = TP / (TP + FN)      ← eje Y
+FPR (tasa falsos+) = FP / (FP + TN)      ← eje X
+```
+
+Se grafica TPR vs FPR para todos los umbrales → curva ROC. El AUC es el área bajo esa curva.
+
+**Interpretación intuitiva**: si tomas al azar una especie amenazada y una no amenazada, AUC es la probabilidad de que el modelo le asigne mayor puntaje a la amenazada. Con RF: 84.8% de los pares son ordenados correctamente.
+
+**Línea base = 0.5** siempre, independiente del desbalance (un clasificador aleatorio sigue la diagonal).
+
+**Escala**:
+```
+0.5         0.7         0.8         0.9         1.0
+ |-----------|-----------|-----------|-----------|
+ Azar       Aceptable    Bueno      Excelente  Perfecto
+```
+
+**Por qué ROC-AUC puede ser optimista con desbalance severo**: FPR usa TN en el denominador. Con 1.277 no-amenazadas, TN es enorme → FPR siempre es pequeño → la curva parece buena incluso para modelos mediocres.
+
+---
+
+### 13.4 PR-AUC y su línea base real
+
+Para cada umbral se calcula Precisión y Recall → curva PR. El AUC es el área bajo esa curva.
+
+**La línea base NO es 0.5 — es la prevalencia de la clase positiva.**
+
+Justificación: un clasificador aleatorio que predice "amenazada" con probabilidad p tiene precisión esperada = p = prevalencia. Para aves: 36/1313 = **0.027**.
+
+```
+Escala PR-AUC (aves):
+  0.027        0.10         0.20         0.50        1.0
+   |------------|------------|------------|-----------|
+  Azar         Bajo        Moderado      Bueno      Perfecto
+  (prevalencia
+   real = 2.7%)
+```
+
+Multiplicador de RF sobre el azar: 0.192 / 0.027 = **7.1×**
+
+| Modelo | PR-AUC | Veces mejor que azar |
+|---|---|---|
+| KNN | 0.098 | 3.6× |
+| Logistic Regression | 0.121 | 4.5× |
+| Gradient Boosting | 0.168 | 6.2× |
+| **Random Forest** | **0.192** | **7.1×** |
+
+PR-AUC es más informativo que ROC-AUC con desbalance severo porque **no usa TN** en ningún cálculo.
+
+---
+
+### 13.5 F1-macro y por qué es bajo
+
+```
+                2 × Precisión × Recall
+F1 =  ─────────────────────────────────────
+              Precisión + Recall
+
+F1-macro = (F1_clase0 + F1_clase1) / 2
+```
+
+**Por qué F1-macro es ~0.13 aunque el modelo funcione bien:**
+
+Con 5-fold CV, cada pliegue de test tiene ~7 amenazadas. Ejemplo de un pliegue malo:
+
+```
+Amenazadas reales: 7
+Modelo predice:    0 amenazadas  →  TP=0, FN=7, FP=0
+
+Precisión = 0/0 → 0  (por convención)
+Recall    = 0/7 = 0
+F1_clase1 = 0
+
+F1_clase0 ≈ 0.97  (predice bien la mayoría)
+F1-macro  = (0.97 + 0) / 2 = 0.485  ← este pliegue colapsa
+```
+
+El promedio de 5 pliegues termina cerca de 0.13. **No porque el modelo sea malo, sino porque con 7 positivos de test un solo pliegue conservador hunde el promedio.**
+
+---
+
+### 13.6 Tabla resumen para presentación
+
+| Métrica | Pregunta que responde | Línea base (azar) | RF obtiene | Interpretación |
+|---|---|---|---|---|
+| ROC-AUC | ¿Distingue bien amenazadas de no amenazadas? | 0.50 (siempre) | 0.848 | Muy bueno |
+| PR-AUC | ¿Es preciso cuando los positivos son raros? | **0.027** (prevalencia) | 0.192 | 7.1× mejor que azar |
+| F1-macro | ¿Es justo con ambas clases? | ~0.05 | 0.130 | Limitado por pocos positivos |
+
+La métrica más confiable para comparar modelos en este problema es **ROC-AUC**: es threshold-independent, no se deforma por el desbalance de la misma forma que PR-AUC, y no colapsa por pliegues sin positivos como F1.
+
+---
+
+### 13.7 Por qué RF gana sobre Gradient Boosting (pregunta frecuente)
+
+GB **no es una mejora de RF** — son paradigmas distintos:
+
+| | Random Forest | Gradient Boosting |
+|---|---|---|
+| Construcción | 300 árboles en **paralelo** (bagging) | Árboles en **secuencia**, cada uno corrige al anterior |
+| Problema que resuelve | Reduce **varianza** | Reduce **bias** |
+| Riesgo | Pierde señal en clases raras | Se sobreajusta con pocos datos |
+
+Con solo 36 positivos y 64 features (aves), GB tiene demasiada capacidad → sobreajuste. RF tiene regularización implícita (bagging + max_features=√64).
+
+**Regla general: GB gana con muchos datos. RF gana con pocos positivos y muchas features.**
+
+Nota: mirando solo aves, Logistic Regression tiene mejor PR-AUC (0.281) y F1 (0.213) que RF. Esto se debe a que RF genera probabilidades no calibradas — `predict_proba` refleja proporciones de hojas, no probabilidades reales. Trabajo futuro: `CalibratedClassifierCV`.
+
+---
+
 *Generado como referencia técnica del proyecto BioAlerta — Marzo 2026*

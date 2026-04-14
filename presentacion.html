@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BioAlerta — Predicción de amenaza de especies en Bolivia</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+  <style>
+    :root {
+      --green:       #4CAF50;
+      --green-light: #81C784;
+      --green-dark:  #2E7D32;
+      --bg-card:     #111111;
+      --bg-inset:    #0d0d0d;
+      --bg-green:    #0b1a0c;
+      --bg-red:      #1a0b0b;
+      --border:      #2a2a2a;
+      --text-dim:    #777;
+      --text-mid:    #bbb;
+    }
+
+    /* Base — fuente más pequeña */
+    .reveal { font-size: 34px; }
+    .reveal h1, .reveal h2, .reveal h3 { color: var(--green-light); text-transform: none; }
+    .reveal h2 {
+      font-size: 1.25em;
+      border-bottom: 1px solid var(--green-dark);
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+    .reveal .slides section { text-align: left; }
+    .reveal p { margin: 0 0 6px; }
+    .reveal ul { margin: 0; }
+    .reveal ul li { margin-bottom: 2px; }
+
+    /* Tags */
+    .tag {
+      display: inline-block;
+      background: var(--green-dark);
+      color: #fff;
+      border-radius: 2px;
+      padding: 1px 7px;
+      font-size: 0.68em;
+      margin: 1px 2px;
+      vertical-align: middle;
+    }
+    .tag-red    { background: #7f1d1d; }
+    .tag-blue   { background: #1e3a5f; }
+    .tag-orange { background: #7c3300; }
+    .tag-purple { background: #3b1f5e; }
+    .tag-gray   { background: #2a2a2a; }
+
+    /* Boxes */
+    .info-box {
+      background: var(--bg-green);
+      border-left: 3px solid var(--green);
+      border-radius: 2px;
+      padding: 6px 11px;
+      margin: 5px 0;
+      font-size: 0.78em;
+      color: var(--text-mid);
+    }
+    .warn-box {
+      background: var(--bg-red);
+      border-left: 3px solid #c62828;
+      border-radius: 2px;
+      padding: 6px 11px;
+      margin: 5px 0;
+      font-size: 0.78em;
+      color: var(--text-mid);
+    }
+    .dark-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 6px 11px;
+      margin: 5px 0;
+      font-size: 0.78em;
+      color: var(--text-mid);
+    }
+
+    /* Layout */
+    .two-col       { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .three-col     { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .col-img       { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; align-items: start; }
+    .col-img-wide  { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 12px; margin-top: 8px; align-items: start; }
+
+    /* Images */
+    .slide-img  { width: 100%; border: 1px solid var(--border); border-radius: 2px; display: block; }
+    .img-caption { font-size: 0.55em; color: var(--text-dim); margin-top: 3px; text-align: center; }
+
+    /* Species grid */
+    .species-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 8px; }
+    .species-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; text-align: center; }
+    .species-card img     { width: 100%; height: 80px; object-fit: cover; display: block; }
+    .species-card .sp-name   { font-size: 0.5em; color: var(--text-dim); padding: 3px; line-height: 1.2; }
+    .species-card .sp-status { font-size: 0.55em; font-weight: bold; padding: 2px 3px 3px; }
+    .sp-en { color: #ef5350; }
+    .sp-vu { color: #FFA726; }
+
+    /* Portada */
+    .portada-title  { font-size: 2.6em; font-weight: bold; color: var(--green); letter-spacing: -1px; margin-bottom: 0.1em; }
+    .portada-course { font-size: 0.75em; color: var(--text-dim); margin-top: 1em; border-top: 1px solid #222; padding-top: 0.4em; }
+
+    /* IUCN ladder */
+    .iucn-ladder { display: flex; align-items: flex-end; gap: 5px; margin: 8px 0 3px; font-size: 0.62em; }
+    .iucn-cat    { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .iucn-bar    { width: 40px; border-radius: 2px 2px 0 0; }
+    .iucn-label  { color: #ccc; font-weight: bold; font-size: 0.95em; }
+    .iucn-name   { color: var(--text-dim); font-size: 0.82em; text-align: center; line-height: 1.2; }
+
+    /* Flow */
+    .flow       { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; margin: 8px 0; font-size: 0.68em; }
+    .flow-box   { background: var(--bg-card); border: 1px solid var(--border); border-radius: 3px; padding: 6px 9px; text-align: center; min-width: 80px; color: #e0e0e0; line-height: 1.2; flex: 1; }
+    .flow-box strong  { color: var(--green-light); display: block; }
+    .flow-box.active  { border-color: var(--green); }
+    .flow-arrow { color: var(--green-dark); font-size: 1.1em; font-weight: bold; flex-shrink: 0; }
+
+    /* Tables */
+    .reveal table           { width: 100%; border-collapse: collapse; font-size: 0.72em; margin-top: 8px; }
+    .reveal table th        { background: var(--green-dark); color: #fff; padding: 5px 9px; text-align: left; }
+    .reveal table td        { border-bottom: 1px solid #1a1a1a; padding: 5px 9px; color: #ddd; background: var(--bg-inset); }
+    .reveal table tr:nth-child(even) td { background: #111; }
+    .reveal table tr.winner td          { background: #0b1e0c; color: #fff; font-weight: bold; }
+
+    /* Metric cards */
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
+    .metric-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 2px; padding: 8px 10px; }
+    .metric-card .label { font-size: 0.62em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-card .value { font-size: 1.6em; font-weight: bold; color: var(--green); line-height: 1.1; }
+    .metric-card .sub   { font-size: 0.62em; color: var(--text-dim); }
+
+    /* Feature bars */
+    .feat-row    { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 0.7em; }
+    .feat-name   { min-width: 140px; color: #ccc; }
+    .feat-bar-bg { flex: 1; height: 10px; background: #1a1a1a; border-radius: 2px; overflow: hidden; }
+    .feat-bar    { height: 100%; background: var(--green); border-radius: 2px; }
+    .feat-pct    { min-width: 44px; text-align: right; color: var(--green-light); font-weight: bold; }
+
+    /* Step grid (replaces vertical list) */
+    .step-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
+    .step-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--green-dark);
+      border-radius: 2px;
+      padding: 6px 10px;
+      font-size: 0.72em;
+      color: #ddd;
+      line-height: 1.4;
+    }
+    .step-item strong { color: var(--green-light); display: block; margin-bottom: 1px; }
+
+    /* Code */
+    .reveal pre           { width: 100%; font-size: 0.66em; box-shadow: none; border: 1px solid var(--border); border-radius: 2px; background: var(--bg-inset); margin: 8px 0; }
+    .reveal pre code      { padding: 10px 14px; background: transparent; }
+
+    /* Pipeline */
+    .pipeline     { display: flex; align-items: center; gap: 3px; font-size: 0.66em; margin: 8px 0; }
+    .p-step       { background: var(--bg-card); border: 1px solid #333; border-radius: 2px; padding: 5px 8px; color: #ddd; text-align: center; flex: 1; }
+    .p-step.active { border-color: var(--green); color: var(--green-light); }
+    .p-arrow      { color: #444; font-size: 1em; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ══════════════════════════════ SLIDE 1 — PORTADA ══ -->
+    <section style="text-align:center;">
+      <div class="portada-title">BioAlerta</div>
+      <p style="font-size:0.95em; color:var(--text-mid); margin-top:0.3em;">
+        Predicción de amenaza de especies en Bolivia<br>
+        <span style="color:var(--green-light); font-size:0.88em;">ML + Geoespacial para conservación de biodiversidad</span>
+      </p>
+      <div style="margin-top:1em;">
+        <span class="tag">Random Forest</span>
+        <span class="tag tag-blue">MLflow</span>
+        <span class="tag tag-orange">DVC</span>
+        <span class="tag tag-purple">DagsHub</span>
+      </div>
+      <p class="portada-course">DAT255 · MLOPS · 2026</p>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 2 — MARCO TEÓRICO ══ -->
+    <section>
+      <h2>Marco Teórico</h2>
+      <div class="col-img-wide">
+        <div>
+          <p style="font-size:0.72em; color:var(--green-light); margin-bottom:4px;">Bolivia: país megadiverso</p>
+          <img src="informe/img/mapa_ecorregiones_bolivia.png" class="slide-img" alt="Ecorregiones Bolivia">
+          <p class="img-caption">14 ecorregiones — Amazonía, Andes, Chaco, Pantanal</p>
+        </div>
+        <div>
+          <p style="font-size:0.72em; color:var(--green-light); margin-bottom:4px;">Categorías IUCN — Lista Roja</p>
+          <div class="iucn-ladder">
+            <div class="iucn-cat"><div class="iucn-bar" style="height:18px;background:#4CAF50;"></div><span class="iucn-label">LC</span><span class="iucn-name">Least<br>Concern</span></div>
+            <div class="iucn-cat"><div class="iucn-bar" style="height:26px;background:#AED581;"></div><span class="iucn-label">NT</span><span class="iucn-name">Near<br>Threatened</span></div>
+            <div class="iucn-cat"><div class="iucn-bar" style="height:38px;background:#FDD835;"></div><span class="iucn-label">VU</span><span class="iucn-name">Vulnerable</span></div>
+            <div class="iucn-cat"><div class="iucn-bar" style="height:50px;background:#FF7043;"></div><span class="iucn-label">EN</span><span class="iucn-name">Endangered</span></div>
+            <div class="iucn-cat"><div class="iucn-bar" style="height:62px;background:#c62828;"></div><span class="iucn-label">CR</span><span class="iucn-name">Critically<br>Endangered</span></div>
+            <div class="iucn-cat"><div class="iucn-bar" style="height:74px;background:#37474F;"></div><span class="iucn-label">EW/EX</span><span class="iucn-name">Extinct</span></div>
+          </div>
+          <div class="info-box" style="margin-top:6px;">
+            <strong>DD (Data Deficient):</strong> sin datos suficientes para evaluar riesgo
+            → candidata a predicción por ML.
+          </div>
+          <div class="dark-box">
+            <strong>Traits-based modeling:</strong> rasgos funcionales (masa, rango, dieta)
+            predicen vulnerabilidad al reflejar la respuesta biológica a la presión humana
+            <em>(Purvis et al. 2000; Olden et al. 2008)</em>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 3 — ESPECIES ══ -->
+    <section>
+      <h2>Especies Amenazadas en Bolivia</h2>
+      <p style="font-size:0.7em; color:var(--text-dim); margin-bottom:6px;">
+        Ejemplos del dataset con categoría IUCN conocida
+      </p>
+      <div class="species-grid">
+        <div class="species-card">
+          <img src="informe/img/foto_crax_globulosa.jpg" alt="Crax globulosa">
+          <div class="sp-name"><em>Crax globulosa</em> — Paujil globoso</div>
+          <div class="sp-status sp-en">EN — Endangered</div>
+        </div>
+        <div class="species-card">
+          <img src="informe/img/foto_pauxi_unicornis.jpg" alt="Pauxi unicornis">
+          <div class="sp-name"><em>Pauxi unicornis</em> — Paují cornudo</div>
+          <div class="sp-status sp-en">CR — Critically End.</div>
+        </div>
+        <div class="species-card">
+          <img src="informe/img/foto_cinclodes_aricomae.jpg" alt="Cinclodes aricomae">
+          <div class="sp-name"><em>Cinclodes aricomae</em></div>
+          <div class="sp-status sp-en">CR — Critically End.</div>
+        </div>
+        <div class="species-card">
+          <img src="informe/img/foto_ateles_chamek.jpg" alt="Ateles chamek">
+          <div class="sp-name"><em>Ateles chamek</em> — Mono araña</div>
+          <div class="sp-status sp-en">EN — Endangered</div>
+        </div>
+        <div class="species-card">
+          <img src="informe/img/foto_pteronura.jpg" alt="Pteronura brasiliensis">
+          <div class="sp-name"><em>Pteronura brasiliensis</em></div>
+          <div class="sp-status sp-en">EN — Endangered</div>
+        </div>
+        <div class="species-card">
+          <img src="informe/img/foto_inia_geoffrensis.jpg" alt="Inia geoffrensis">
+          <div class="sp-name"><em>Inia geoffrensis</em> — Bufeo</div>
+          <div class="sp-status sp-vu">VU — Vulnerable</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 4 — PROBLEMA ══ -->
+    <section>
+      <h2>El Problema</h2>
+      <div class="col-img-wide">
+        <div>
+          <div class="warn-box">
+            Muchas especies de Bolivia <strong>no tienen categoría IUCN asignada</strong>
+            — sin datos de amenaza no hay priorización para conservación.
+          </div>
+          <div class="two-col" style="margin-top:10px;">
+            <div class="dark-box" style="text-align:center;">
+              <div style="font-size:1.9em; font-weight:bold; color:var(--green); line-height:1;">165</div>
+              <div style="font-size:0.68em; color:#888;">aves sin etiqueta</div>
+              <div style="font-size:0.65em; color:#ef5350;">2.7% amenazadas</div>
+            </div>
+            <div class="dark-box" style="text-align:center;">
+              <div style="font-size:1.9em; font-weight:bold; color:var(--green); line-height:1;">37</div>
+              <div style="font-size:0.68em; color:#888;">mamíferos sin etiqueta</div>
+              <div style="font-size:0.65em; color:#ef5350;">6.9% amenazadas</div>
+            </div>
+          </div>
+          <div class="dark-box" style="margin-top:8px;">
+            <strong>Desafío:</strong> clase extremadamente minoritaria.
+            Un modelo que prediga siempre "no amenazada" tendría 97.3% de accuracy — y sería inútil.
+          </div>
+        </div>
+        <div>
+          <img src="informe/img/img_desbalance.png" class="slide-img" alt="Desbalance">
+          <p class="img-caption">Distribución de clases — aves y mamíferos</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 5 — OBJETIVO ══ -->
+    <section>
+      <h2>Objetivo</h2>
+      <div class="info-box">
+        Clasificar especies como <strong style="color:var(--green);">amenazadas</strong> (VU/EN/CR)
+        o <strong style="color:#777;">no amenazadas</strong> (LC/NT)
+        usando rasgos biológicos, variables ambientales y presión humana.
+      </div>
+      <div class="two-col" style="margin-top:8px;">
+        <ul style="font-size:0.74em; line-height:1.6; color:#ddd; padding-left:1.2em;">
+          <li>Pipeline <strong>reproducible</strong> con MLOps (DVC + MLflow + DagsHub)</li>
+          <li>Comparar 5 algoritmos con validación cruzada estratificada (k=5)</li>
+          <li>Identificar <strong>variables de mayor importancia</strong> para la amenaza</li>
+          <li>Predecir categoría para las <strong>165 aves + 37 mamíferos</strong> sin etiqueta</li>
+        </ul>
+        <div>
+          <div class="dark-box">
+            <strong>Métricas:</strong>
+            <span class="tag" style="background:#1b2b1b;">ROC-AUC</span> discriminación ·
+            <span class="tag" style="background:#1b2b1b;">PR-AUC</span> bajo desbalance ·
+            <span class="tag" style="background:#1b2b1b;">F1-macro</span> balance
+          </div>
+          <div class="dark-box" style="margin-top:6px;">
+            <strong>Etiquetas:</strong>
+            <span class="tag tag-red">1 — Amenazada</span>
+            <span class="tag tag-gray">0 — No amenazada</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 6 — METODOLOGÍA ══ -->
+    <section>
+      <h2>Metodología</h2>
+      <div class="flow">
+        <div class="flow-box"><strong>GBIF</strong>1.37M ocurrencias</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box"><strong>Centroide</strong>robusto/especie</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box"><strong>Features</strong>3 bloques</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box"><strong>Preproceso</strong>OHE · impute</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box"><strong>CV k=5</strong>Stratified</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box active"><strong>5 modelos</strong>ROC-AUC</div>
+      </div>
+      <div class="two-col">
+        <div class="info-box"><strong>Desbalance:</strong> <code>class_weight='balanced'</code> — penaliza errores en la clase amenazada.</div>
+        <div class="info-box"><strong>Umbral adaptativo:</strong> threshold = prevalencia (0.027 aves · 0.069 mamíferos) en lugar de 0.5.</div>
+      </div>
+      <table style="margin-top:8px;">
+        <thead><tr><th>Bloque</th><th>Fuente</th><th>Variables clave</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Rasgos biológicos</td>
+            <td><span class="tag">AVONET</span> <span class="tag">PanTHERIA</span></td>
+            <td>Masa, longitud alar, rango geográfico, dieta, hábitat</td>
+          </tr>
+          <tr>
+            <td>Variables ambientales</td>
+            <td><span class="tag tag-blue">WorldClim</span> <span class="tag tag-blue">GFW</span> <span class="tag tag-blue">MapBiomas</span></td>
+            <td>Temperatura, precipitación, estacionalidad, deforestación</td>
+          </tr>
+          <tr>
+            <td>Presión humana</td>
+            <td><span class="tag tag-orange">RAISG</span></td>
+            <td>Minería, petroleras, quemas, ANPs</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 7 — DISTRIBUCIÓN ══ -->
+    <section>
+      <h2>Distribución de Variables</h2>
+      <div class="two-col">
+        <div>
+          <img src="informe/img/img_dist_aves.png" class="slide-img" alt="Distribución aves">
+          <p class="img-caption">Distribución de variables clave — Aves</p>
+        </div>
+        <div>
+          <img src="informe/img/img_dist_mamiferos.png" class="slide-img" alt="Distribución mamíferos">
+          <p class="img-caption">Distribución de variables clave — Mamíferos</p>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:8px;">
+        <strong>2.2 GB</strong> de rasters y shapefiles procesados con rasterio + geopandas.
+        Versionados con <strong>DVC</strong> — reproducibles sin recomputar la extracción geoespacial.
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 8 — MODELOS ══ -->
+    <section>
+      <h2>Modelos Comparados — Aves</h2>
+      <div class="col-img-wide">
+        <div>
+          <table>
+            <thead><tr><th>Modelo</th><th>ROC-AUC</th><th>PR-AUC</th><th>F1-macro</th></tr></thead>
+            <tbody>
+              <tr class="winner"><td>Random Forest</td><td>0.848 ± 0.088</td><td>0.192</td><td>0.130</td></tr>
+              <tr><td>Gradient Boosting</td><td>0.831 ± 0.074</td><td>0.168</td><td>0.112</td></tr>
+              <tr><td>SVM (RBF)</td><td>0.812 ± 0.071</td><td>0.145</td><td>0.103</td></tr>
+              <tr><td>Logistic Regression</td><td>0.794 ± 0.062</td><td>0.121</td><td>0.098</td></tr>
+              <tr><td>KNN</td><td>0.761 ± 0.095</td><td>0.098</td><td>0.085</td></tr>
+            </tbody>
+          </table>
+          <div class="dark-box" style="margin-top:7px;">
+            CV estratificada k=5 ·
+            <strong style="color:var(--green-light);">Baseline PR-AUC ≈ 0.027</strong> (prevalencia)
+          </div>
+        </div>
+        <div>
+          <img src="informe/img/img_modelos_comparacion.png" class="slide-img" alt="Comparación modelos">
+          <p class="img-caption">Comparativa visual ROC-AUC y PR-AUC por modelo</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 9 — RESULTADOS ══ -->
+    <section>
+      <h2>Resultados — Random Forest</h2>
+      <div class="col-img">
+        <div>
+          <div class="metric-grid">
+            <div class="metric-card">
+              <div class="label">ROC-AUC Aves</div>
+              <div class="value">0.848</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">PR-AUC Aves</div>
+              <div class="value">0.192</div>
+              <div class="sub">7.1× mejor que azar</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">ROC-AUC Mamíf.</div>
+              <div class="value">0.792</div>
+            </div>
+            <div class="metric-card">
+              <div class="label">PR-AUC Mamíf.</div>
+              <div class="value">0.157</div>
+              <div class="sub">2.3× mejor que azar</div>
+            </div>
+          </div>
+          <div class="dark-box" style="margin-top:7px;">
+            <strong>Umbral adaptativo:</strong> threshold = prevalencia
+            (0.027 aves · 0.069 mamíferos) — maximiza recall sin colapsar precision.
+          </div>
+        </div>
+        <div>
+          <img src="informe/img/img_pred_proba.png" class="slide-img" alt="Probabilidades predichas">
+          <p class="img-caption">Distribución de probabilidades predichas por clase</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 10 — FEATURE IMPORTANCE ══ -->
+    <section>
+      <h2>Importancia de Variables</h2>
+      <div class="col-img">
+        <div>
+          <img src="informe/img/img_importancia_vars.png" class="slide-img" alt="Feature importance">
+          <p class="img-caption">Top variables — Random Forest</p>
+        </div>
+        <div>
+          <p style="font-size:0.7em; color:var(--green-light); margin-bottom:4px;">Aves — Top features</p>
+          <div class="feat-row"><span class="feat-name">Wing Length</span><div class="feat-bar-bg"><div class="feat-bar" style="width:100%"></div></div><span class="feat-pct">12.4%</span></div>
+          <div class="feat-row"><span class="feat-name">Mass (AVONET)</span><div class="feat-bar-bg"><div class="feat-bar" style="width:95%"></div></div><span class="feat-pct">11.8%</span></div>
+          <div class="feat-row"><span class="feat-name">Range size</span><div class="feat-bar-bg"><div class="feat-bar" style="width:67%"></div></div><span class="feat-pct">8.3%</span></div>
+
+          <p style="font-size:0.7em; color:var(--green-light); margin:10px 0 4px;">Mamíferos — Top features</p>
+          <div class="feat-row"><span class="feat-name">Mass (PanTHERIA)</span><div class="feat-bar-bg"><div class="feat-bar" style="width:100%"></div></div><span class="feat-pct">38.9%</span></div>
+          <div class="feat-row"><span class="feat-name">Temp. Estacionalidad</span><div class="feat-bar-bg"><div class="feat-bar" style="width:21%"></div></div><span class="feat-pct">8.1%</span></div>
+
+          <div class="info-box" style="margin-top:8px;">
+            La <strong>masa corporal</strong> domina en mamíferos (K-selection): especies grandes
+            son más vulnerables por baja tasa reproductiva.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 11 — DVC + DAGSHUB ══ -->
+    <section>
+      <h2>MLOps: DVC + DagsHub</h2>
+      <div class="step-grid">
+        <div class="step-item">
+          <strong>DVC versiona 2.2 GB</strong>
+          Rasters WorldClim, shapefiles RAISG, features intermedios — sin sobrecargar Git.
+        </div>
+        <div class="step-item">
+          <strong>DagsHub S3 remoto</strong>
+          Almacenamiento gratuito para archivos DVC.
+          <code>dvc push / dvc pull</code> entre máquinas.
+        </div>
+        <div class="step-item">
+          <strong>GitHub ↔ DagsHub sincronizados</strong>
+          Código y datos siempre apuntan al mismo commit hash.
+        </div>
+        <div class="step-item">
+          <strong>Reproducibilidad total</strong>
+          Clonar repo + <code>dvc pull</code> reconstruye exactamente el entorno de datos.
+        </div>
+      </div>
+      <pre><code class="bash">git clone https://github.com/.../bioAlerta
+dvc remote add origin https://dagshub.com/.../bioAlerta.dvc
+dvc pull</code></pre>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 12 — MLFLOW ══ -->
+    <section>
+      <h2>MLOps: MLflow</h2>
+      <div class="col-img">
+        <div class="step-grid">
+          <div class="step-item">
+            <strong>12 runs registrados</strong>
+            5 modelos × 2 clases + 2 runs finales con artefactos
+          </div>
+          <div class="step-item">
+            <strong>Parámetros</strong>
+            modelo, clase taxonómica, cv_folds, random_seed
+          </div>
+          <div class="step-item">
+            <strong>Métricas</strong>
+            roc_auc, pr_auc, f1_macro + desv. estándar de CV
+          </div>
+          <div class="step-item">
+            <strong>Artefactos</strong>
+            Modelos serializados <code>best_Aves</code>, <code>best_Mamiferos</code>
+          </div>
+        </div>
+        <div>
+          <div class="three-col" style="margin-top:0;">
+            <div class="metric-card" style="text-align:center;">
+              <div class="label">Runs</div>
+              <div class="value" style="font-size:2.2em;">12</div>
+            </div>
+            <div class="metric-card" style="text-align:center;">
+              <div class="label">Modelos</div>
+              <div class="value" style="font-size:2.2em;">5</div>
+            </div>
+            <div class="metric-card" style="text-align:center;">
+              <div class="label">Ganador</div>
+              <div class="value" style="font-size:0.9em; color:var(--green-light);">Random<br>Forest</div>
+            </div>
+          </div>
+          <div class="info-box" style="margin-top:8px;">
+            <strong>UI en DagsHub:</strong> experimentos comparables online, sin levantar servidor local.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ SLIDE 13 — PIPELINE ══ -->
+    <section>
+      <h2>Pipeline Reproducible</h2>
+      <div class="pipeline">
+        <div class="p-step active">01<br><small>Datos GBIF</small></div>
+        <span class="p-arrow">→</span>
+        <div class="p-step active">02<br><small>Centroides</small></div>
+        <span class="p-arrow">→</span>
+        <div class="p-step active">03<br><small>Features geo</small></div>
+        <span class="p-arrow">→</span>
+        <div class="p-step active">04<br><small>Preproceso</small></div>
+        <span class="p-arrow">→</span>
+        <div class="p-step active">05<br><small>Modelos</small></div>
+        <span class="p-arrow">→</span>
+        <div class="p-step active">06<br><small>Predicciones</small></div>
+      </div>
+      <pre><code class="bash">git clone https://github.com/.../bioAlerta
+conda env create -f environment.yml && conda activate bioalerta
+dvc pull                    # descarga 2.2 GB de datos
+jupyter nbconvert --execute notebooks/01_data_collection.ipynb
+# ... hasta 06_predictions.ipynb</code></pre>
+      <div class="two-col" style="margin-top:8px;">
+        <div class="dark-box">
+          <strong>Código</strong> versionado con <span class="tag">Git</span> ·
+          <strong>Datos</strong> con <span class="tag tag-orange">DVC</span>
+        </div>
+        <div class="dark-box">
+          <strong>Experimentos</strong> con <span class="tag tag-blue">MLflow</span> ·
+          <strong>Todo online</strong> en <span class="tag tag-purple">DagsHub</span>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:10px; font-size:0.65em; color:var(--text-dim);">
+        BioAlerta · DAT255 · MLOPS · 2026
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'none',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1100,
+    height: 700,
+    margin: 0.04,
+    plugins: []
+  });
+</script>
+</body>
+</html>
